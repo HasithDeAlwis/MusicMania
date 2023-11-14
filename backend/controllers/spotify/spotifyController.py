@@ -22,11 +22,13 @@ def getSpotifyAuthURL() -> str:
     #returning the auth_url
     return auth_url
 
-
+#get the token from the spotify API
 def getToken():
+    #error occured
     if 'error' in request.args:
         return jsonify({"error": requests.args['error']})
     
+    #create the request body for the post request to get the token
     if 'code' in request.args:
         req_body = {
             'code': request.args['code'],
@@ -36,6 +38,9 @@ def getToken():
             'client_secret': API_INFORMATION[1]
         }
         
+        #post request to Spotify API to get token
         response = requests.post(TOKEN_URL, data=req_body)
+        #save the token_info to json()
         token_info = response.json()
+        #return it
         return token_info

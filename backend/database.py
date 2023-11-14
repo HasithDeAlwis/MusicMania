@@ -36,8 +36,9 @@ VERIFY_EMAIL = (
     WHERE token = (%s)"""
 )
 
-FIND_SAME_EMAIL = (
+
+FIND_SAME_ACCOUNT = (
     """SELECT * from users
-    WHERE email in (%s)
-    LIMIT 1"""
+    WHERE email = %s or user_name = %s
+    LIMIT 1;"""
 )
