@@ -16,5 +16,5 @@ print(API_INFORMATION[2])
 #important spotify urls 
 AUTH_URL = 'https://accounts.spotify.com/authorize'
 TOKEN_URL = 'https://accounts.spotify.com/api/token'
-API_BASE_URL = 'https://api.spotify.com/v1/'
+API_BASE_URL = 'https://api.spotify.com/v1'
 

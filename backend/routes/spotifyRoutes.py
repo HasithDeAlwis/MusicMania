@@ -1,6 +1,6 @@
 #this file will contain all the API routes that will make calls to the spotify API
-from flask import Blueprint, redirect, session, request, jsonify, Response
-from ..controllers.spotify.spotifyController import getSpotifyAuthURL, getToken, refreshToken, getPlaylists
+from flask import Blueprint, redirect, session, request, jsonify, Response, url_for
+from ..controllers.spotify.spotifyController import getSpotifyAuthURL, getToken, refreshToken, getPlaylists, getTopSongs, getRecentlyPlayed, getTopArtist
 from datetime import datetime
 import requests 
 
@@ -25,7 +25,8 @@ def setTokenInfo():
     session['access_token'] = token_info['access_token'] 
     session['refresh_token'] = token_info['refresh_token']
     session['expires_at'] = datetime.now().timestamp() + token_info['expires_in']
-    return redirect
+    playlistRoute = url_for('spotify.get_playlist')
+    return redirect(playlistRoute)
 
 #route to refresh token once it has expired
 @spotify.route('/refresh-token')
@@ -37,18 +38,22 @@ def refresh_token():
     session['expires_at'] = datetime.now().timestamp() + new_token_info['expires_in']
     
 @spotify.route('/top-songs')
-def getTopSongs():
-    pass
+def get_top_songs():
+    songsJSON = getTopSongs()
+    return songsJSON
 
 @spotify.route('/recently-played')
-def getRecentlyPlayed():
-    pass
+def get_recently_played():
+    recentlyPlayedJSON = getRecentlyPlayed()
+    return recentlyPlayedJSON
 
 
 @spotify.route('/top-artists')
-def getTopArtist():
-    pass
+def get_top_artist():
+    artistJSON = getTopArtist()
+    return artistJSON
 
-@app.route('/playlist')
+@spotify.route('/playlist')
 def get_playlist():
     playlistJSON = getPlaylists()
+    return playlistJSON
