@@ -9,6 +9,8 @@ def getSpotifyAuthURL() -> str:
     #scope of this request according to spotify API
     scope = "user-read-private user-read-email playlist-read-private user-top-read user-read-recently-played"
     
+    print("Hope this works", API_INFORMATION[0])
+    
     #adding necessary params
     params = {
         'client_id': API_INFORMATION[0],
@@ -248,7 +250,6 @@ def getPlaylists():
             for item in playlistPage:
                 if (item):
                     songLink =  item['tracks']['href']
-                    songFeatures = getPlaylistSongInfo(songLink)
                     # print(songFeatures)
                     #add the important info the dict
                     playlistInfo.append({
@@ -256,9 +257,9 @@ def getPlaylists():
                         "name": item['name'],
                         "link": item['external_urls']['spotify'],
                         "images": item['images'],
+                        "spotifyLink": item['tracks']['href']
                     })
-                return playlistInfo
-            
+                    
             #if there is a next then we can get the next value
             if (results['next']):
                 #set the playlistURL to the next playlist
@@ -271,8 +272,12 @@ def getPlaylists():
     #error with server
     except Exception:
         abort(Response(Exception, status=401))
-        
-def getPlaylistSongInfo(songsAPIEndpoint: str) -> tuple:
+
+#get the info of a specific songs on a spotify playlist        
+def getPlaylistSongInfo(playlistID: str) -> list:
+    #create the endpoint for the track details for a playlist
+    songsAPIEndpoint = API_BASE_URL + '/playlists/' + playlistID + '/tracks'
+    
     #basic authentication
     if 'access_token' not in session:
         return redirect('/login')
@@ -285,43 +290,68 @@ def getPlaylistSongInfo(songsAPIEndpoint: str) -> tuple:
         'Authorization': f"Bearer {session['access_token']}",
     }
     
+    #get the results
     results = requests.get(songsAPIEndpoint, headers=headers)
     results = results.json()
-
+    
+    #we only want the items object
     tracksInfo = results['items']
+    
+    #arrays that will hold all the info
     allArtists = []
     allSongs = []
+    
+    #store the songIds in a string for the track analysis
     songIds = ""
     
+    #save the artists for a song in a single string (this is because of SQL not allowing multi-deminsonal arrays of different sizes)
     artistsForSong = ""
     
+    #count is 0
     count = 0
     
+    #loop through every track
     for item in tracksInfo:
+        #take the song title
         allSongs.append(item['track']['name'])
+        #take the name of the artist
         artists =  item['track']['album']['artists']
         
+        #loop through the artist
         for index, artist in enumerate(artists):
+            #check to see if the index is 0 so we won't add an @
             if (index == 0):
                 artistsForSong = artist['name']
             else:
-                    
-                artistsForSong += "@" + artist['name'] 
-                
+                #add the artist list
+                artistsForSong += "@" + artist['name'] #the @ is for future logic when distingushing between different arists
+        
+        #add this to the artists to the array 
         allArtists.append(artistsForSong)
         
+        #make this empty again for the next song
         artistsForSong = ""
         
+        #for the first 100 songs of the playlist check add their song id
         if count < 100:
             if count != 0:
+                #get the ID
                 songIds += ',' + item['track']['id']
             else:
                 songIds = item['track']['id']
             count += 1
-    
+    #get the track features of a song
     trackFeatures = analyzeSongs(songIds)
-    allSongsInfo = [allArtists, allSongs, trackFeatures]
-    #print(allSongsInfo)
+    
+    #put all the song info into a dict 
+    allSongsInfo = {
+        "artists": allArtists, 
+        "titles": allSongs, 
+        "valence": trackFeatures[0],
+        "danceability": trackFeatures[1]
+    }
+    
+    #return the dictionary 
     return allSongsInfo
 
 def analyzeSongs(songIds: str):
@@ -338,21 +368,33 @@ def analyzeSongs(songIds: str):
         'Authorization': f"Bearer {session['access_token']}",
     }
     
+    #set valence and avg to 0 for counting 
     valenceAvg = 0
     dancebilityAvg = 0
+    
+    #create url to analyze all the tracks
     songAnalysisEndpoint = API_BASE_URL + '/audio-features?ids=' + songIds
-    print(songAnalysisEndpoint)
+    
+    #get all the songs
     songAnalysingResults = requests.get(songAnalysisEndpoint, headers=headers)
     songAnalysingResults = songAnalysingResults.json()
-    print(songAnalysingResults)
+    
+    #only want audio_features object
     songAnalysingResults = songAnalysingResults['audio_features']
+    #loop through every song
     for song in songAnalysingResults:
+        #increment dancebility and valence
         dancebilityAvg += song['danceability']
         valenceAvg += song['valence'] 
-    
-    valenceAvg = valenceAvg / len(songIds)
-    dancebilityAvg = dancebilityAvg / len(songIds)
+        
+    #make songIds into an array then get its length to find num of songs
+    numberOfSongs = len(songIds.split(','))
+    #calc valence and dancebility of playlist
+    valenceAvg = valenceAvg / numberOfSongs
+    dancebilityAvg = dancebilityAvg / numberOfSongs
+    #add this to an array 
     songFeaturesInfo = [valenceAvg, dancebilityAvg]
+    #return the info
     return songFeaturesInfo
         
         
