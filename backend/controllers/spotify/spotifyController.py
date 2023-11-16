@@ -85,7 +85,7 @@ def getTopSongs() -> dict:
     
     #make url for songs
     songURL = API_BASE_URL + '/me/top/tracks?limit=50'
-    topSongs = [] #stores top songs info
+    topSongsInfo = [] #stores top songs info
     currentArtistArray = [] #stores artist for a given song
     
     try:
@@ -100,10 +100,11 @@ def getTopSongs() -> dict:
         for index, song in enumerate(topSongsResult):
             if song:
                 #add needed info
-                topSongs.append({
+                topSongsInfo.append({
                         "id": song['id'],
                         "name": song['name'],
-                        "popularity": song['popularity'] #how popular the song is on a scale of 0-100
+                        "popularity": song['popularity'], #how popular the song is on a scale of 0-100
+                        "image": song['album']['images']
                     }) 
                 #get the artists
                 for artist in song['artists']:
@@ -111,10 +112,10 @@ def getTopSongs() -> dict:
                     currentArtistArray.append(artist['name'])
                     
                 #add that artist to the array 
-                topSongs[index]['artists'] = currentArtistArray  
+                topSongsInfo[index]['artists'] = currentArtistArray  
                 #make the array empty for the next song 
                 currentArtistArray = []
-        return topSongs
+        return topSongsInfo
 
     except Exception:
         abort(Response("Spotify API Error", status=401))
@@ -137,11 +138,15 @@ def getRecentlyPlayed():
     recentlyPlayedURL = API_BASE_URL + '/me/player/recently-played?limit=50'
     
     try:
-    
+        #get the results of the recently played
         results = requests.get(recentlyPlayedURL, headers=headers)
+        #make it a dict
         results = results.json()
-        recentSong = []
-        currentArtistArray = []
+        
+        #where we store the recent songs
+        recentSongInfo = []
+        currentArtistArray = [] #store the artists for each song
+        
         #get only the itmes
         recentlyPlayedResults = results["items"]
         #enumerate through itmes
@@ -149,10 +154,11 @@ def getRecentlyPlayed():
             song = item["track"]
             if song:
                 #add needed info
-                recentSong.append({
+                recentSongInfo.append({
                     "id": song['id'],
                     "name": song['name'],
-                    "popularity": song['popularity'] #how popular the song is on a scale of 0-100
+                    "popularity": song['popularity'], #how popular the song is on a scale of 0-100
+                    "images": song['album']['images']
                     }) 
                 #get the artists
                 for artist in song['artists']:
@@ -160,42 +166,53 @@ def getRecentlyPlayed():
                     currentArtistArray.append(artist['name'])
                         
                 #add that artist to the array 
-                recentSong[index]['artists'] = currentArtistArray  
+                recentSongInfo[index]['artists'] = currentArtistArray  
                 #make the array empty for the next song 
                 currentArtistArray = []
-        return recentSong
+        return recentSongInfo
     except:
         abort(Response("Error with Spotify API", status=400))
     
-    
+#get the top artists    
 def getTopArtist():
     #basic authentication
     if 'access_token' not in session:
-        return redirect('/login')
+        return redirect('/api/spotify/authenticate')
     
     #check refresh token
     if session['expires_at'] < datetime.now().timestamp():
-        return redirect('/refresh-token')
+        return redirect('/api/spotify/refresh-token')
     
     #check header
     headers = {
         'Authorization': f"Bearer {session['access_token']}",
     }
-    
+    #create url for the top artists
     topArtistsURL = API_BASE_URL + '/me/top/artists?limit=50'
+    #get request for artists data
     results = requests.get(topArtistsURL, headers=headers)
+    #convert to dict
     results = results.json()
+    #get only the top artists
     topArtists = results["items"]
-    artistInfo = []
+    #set the artists array to be -
+    topArtistInfo = []
     for artist in topArtists:
         if artist:
-            artistInfo.append(
+            #the top artist info
+            topArtistInfo.append(
                 {
+                    #get their name, genre, popularity and images associated with the artists
                     "name": artist['name'],
-                    "genres": artist['genres']
+                    "genres": artist['genres'],
+                    "images": artist['images'],
+                    "popularity": artist['popularity']
                 }
             )
-    return artistInfo
+    #give back the array of dict with info
+    return topArtistInfo
+
+
 
 #Get a users total playlist then remove the playlist that the users don't listen to much
 def getPlaylists():
@@ -212,7 +229,7 @@ def getPlaylists():
     }
     
     #only take certain info from the playlists returned
-    importantInfo = []
+    playlistInfo = []
     #playlistURL
     playlistURL = API_BASE_URL + '/me/playlists?limit=50&offset=0'
     #get all the playlist from a user
@@ -225,15 +242,23 @@ def getPlaylists():
             #get only the items
             playlistPage = results["items"]
             
+            
+            
             #get the playlist
             for item in playlistPage:
                 if (item):
+                    songLink =  item['tracks']['href']
+                    songFeatures = getPlaylistSongInfo(songLink)
+                    # print(songFeatures)
                     #add the important info the dict
-                    importantInfo.append({
+                    playlistInfo.append({
                         "id": item['id'],
                         "name": item['name'],
-                        "songs": item['tracks']['href'],
+                        "link": item['external_urls']['spotify'],
+                        "images": item['images'],
                     })
+                return playlistInfo
+            
             #if there is a next then we can get the next value
             if (results['next']):
                 #set the playlistURL to the next playlist
@@ -242,7 +267,93 @@ def getPlaylists():
                 #leave the loop
                 break
         #return the dict
-        return importantInfo
+        return playlistInfo
     #error with server
     except Exception:
-        abort(Response("Spotify API Error", status=401))
+        abort(Response(Exception, status=401))
+        
+def getPlaylistSongInfo(songsAPIEndpoint: str) -> tuple:
+    #basic authentication
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    #check if token expired
+    if session['expires_at'] < datetime.now().timestamp():
+        return redirect('/refresh-token')
+    #check header
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}",
+    }
+    
+    results = requests.get(songsAPIEndpoint, headers=headers)
+    results = results.json()
+
+    tracksInfo = results['items']
+    allArtists = []
+    allSongs = []
+    songIds = ""
+    
+    artistsForSong = ""
+    
+    count = 0
+    
+    for item in tracksInfo:
+        allSongs.append(item['track']['name'])
+        artists =  item['track']['album']['artists']
+        
+        for index, artist in enumerate(artists):
+            if (index == 0):
+                artistsForSong = artist['name']
+            else:
+                    
+                artistsForSong += "@" + artist['name'] 
+                
+        allArtists.append(artistsForSong)
+        
+        artistsForSong = ""
+        
+        if count < 100:
+            if count != 0:
+                songIds += ',' + item['track']['id']
+            else:
+                songIds = item['track']['id']
+            count += 1
+    
+    trackFeatures = analyzeSongs(songIds)
+    allSongsInfo = [allArtists, allSongs, trackFeatures]
+    #print(allSongsInfo)
+    return allSongsInfo
+
+def analyzeSongs(songIds: str):
+    
+    #basic authentication
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    #check if token expired
+    if session['expires_at'] < datetime.now().timestamp():
+        return redirect('/refresh-token')
+    #check header
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}",
+    }
+    
+    valenceAvg = 0
+    dancebilityAvg = 0
+    songAnalysisEndpoint = API_BASE_URL + '/audio-features?ids=' + songIds
+    print(songAnalysisEndpoint)
+    songAnalysingResults = requests.get(songAnalysisEndpoint, headers=headers)
+    songAnalysingResults = songAnalysingResults.json()
+    print(songAnalysingResults)
+    songAnalysingResults = songAnalysingResults['audio_features']
+    for song in songAnalysingResults:
+        dancebilityAvg += song['danceability']
+        valenceAvg += song['valence'] 
+    
+    valenceAvg = valenceAvg / len(songIds)
+    dancebilityAvg = dancebilityAvg / len(songIds)
+    songFeaturesInfo = [valenceAvg, dancebilityAvg]
+    return songFeaturesInfo
+        
+        
+    

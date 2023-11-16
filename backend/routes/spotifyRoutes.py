@@ -57,3 +57,23 @@ def get_top_artist():
 def get_playlist():
     playlistJSON = getPlaylists()
     return playlistJSON
+
+@spotify.route('/testing')
+def get_test():
+    #basic authentication
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    #check refresh token
+    if session['expires_at'] < datetime.now().timestamp():
+        return redirect('/refresh-token')
+    
+    #check header
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}",
+    }
+    
+    songAnalysisEndpoint = 'https://api.spotify.com/v1/audio-features?ids=7ouMYWpwJ422jRcDASZB7P'
+    results = requests.get(songAnalysisEndpoint, headers=headers)
+    results = results.json()
+    return results;
