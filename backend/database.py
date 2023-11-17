@@ -26,29 +26,32 @@ INSERT_USER = (
 
 INSERT_TOP_SONGS = (
     """
-    INSERT INTO top_songs (artists, song_names, valence, dancebility, release_date, top_songs_token) VALUES (%s, %s, %s, %s, %s, %s)
+    INSERT INTO top_songs (song_id, song_name, artists_name, song_link, popularity, release_date, cover_images) VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
 )
 
-UPDATE_TOP_SONGS_TABLE = (
+UPDATE_TOP_SONGS = (
     """UPDATE top_songs
         SET
-        artists = ARRAY%s,
-        song_names = ARRAY%s, 
-        valence = %s, 
-        dancebility = %s, 
-        release_date = %s
+        song_id = %s
+        song_names = %s, 
+        artists_name = %s, 
+        song_link = %s, 
+        popularity = %s,
+        release_date = %s,
+        cover_images = %s
         WHERE top_songs_token = %s;"""
 )
 
-INSERT_TOP_ARTIST = (
-    """INSERT INTO top_artists (artist_name, popularity, image, genres, artist_token) VALUES(%s, %s, %s, %s, %s);"""
+INSERT_TOP_ARTISTS = (
+    """INSERT INTO top_artists (artist_id, artist_name, genres, cover_image, artist_link, popularity) VALUES(%s, %s, %s, %s, %s, %s);"""
 )
 
-UPDATE_TOP_ARTIST = (
+UPDATE_TOP_ARTISTS = (
     """UPDATE top_songs
         SET
-        artist_name = ARRAY%s,
+        artist_id = %s,
+        artist_name = %s,
         popularity = %s, 
         image = ARRAY%s, 
         genres = ARRAY%s, 
@@ -56,8 +59,29 @@ UPDATE_TOP_ARTIST = (
 )
 
 INSERT_RECENT_SONGS = (
-    """INSERT INTO recent_songs (recent_songs, populairty, image, recent_songs_token) VALUES (%s, %s, %s, %s)"""
+    """INSERT INTO recent_songs (song_id, song_name, artists_name, song_link, cover_images, popularity) VALUES (%s, %s, %s, %s, %s, %s)"""
 )
+
+UPDATE_RECENT_SONGS = (
+    """UPDATE recent_songs
+    SET 
+    song_id = %s
+    song_name = %s
+    artists_name = %s,
+    song_link = %s
+    cover_images = %s
+    popularity = %s,
+    WHERE %s = %s
+    """
+)
+
+
+
+CHECK_IF_ALREADY_ADDED = (
+    """SELECT * FROM %s 
+    WHERE %s = %s"""
+)
+
 
 UPDATE_RECENT_SONGS = (
     """UPDATE recent_songs
@@ -68,12 +92,11 @@ UPDATE_RECENT_SONGS = (
     WHERE recent_songs_token = %s;"""
 )
 
-INSERT_PLAYLIST = (
-    """INSERT INTO playlists (playlist_names, playlist_dancebility, playlist_valence, playlist_links, playlist_song_names, playlist_artist_names, playlist_token)
-    VALUE (%s, %s, %s, %s, %s, %s, %s)"""
+INSERT_PLAYLISTS = (
+    """INSERT INTO playlists (playlist_id, playlist_name, playlist_link, playlist_cover, spotify_link) VALUES (%s, %s, %s, %s, %s)"""
 )
 
-UPDATE_PLAYLIST = (
+UPDATE_PLAYLISTS = (
     """UPDATE playlist
     SET
     playlist_name = ARRAY%s,

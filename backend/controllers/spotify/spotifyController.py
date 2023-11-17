@@ -3,6 +3,7 @@ import urllib.parse
 from flask import request, jsonify, redirect, session, url_for, abort, Response
 import requests
 from datetime import datetime
+from ...database import connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS
 
 #returns the url that will be called to start the OAuth Code Flow
 def getSpotifyAuthURL() -> str:
@@ -75,68 +76,76 @@ def getTopSongs() -> dict:
     #basic authentication
     if 'access_token' not in session:
         return redirect('/login')
-    
+        
     #check refresh token
     if session['expires_at'] < datetime.now().timestamp():
         return redirect('/refresh-token')
-    
+        
     #check header
     headers = {
         'Authorization': f"Bearer {session['access_token']}",
     }
+    try:    
+        #make url for songs
+        songURL = API_BASE_URL + '/me/top/tracks?limit=50'
+        topSongsInfo = [] #stores top songs info
+        currentArtistArray = [] #stores artist for a given song
     
-    #make url for songs
-    songURL = API_BASE_URL + '/me/top/tracks?limit=50'
-    topSongsInfo = [] #stores top songs info
-    currentArtistArray = [] #stores artist for a given song
-    
-    try:
+  
         #make the request
         results = requests.get(songURL, headers=headers)
         #make results to dict
         results = results.json()
-        
         #get only the itmes
         topSongsResult = results["items"]
         #enumerate through itmes
-        for index, song in enumerate(topSongsResult):
+        for song in topSongsResult:
             if song:
-                #add needed info
-                topSongsInfo.append({
-                        "id": song['id'],
-                        "name": song['name'],
-                        "popularity": song['popularity'], #how popular the song is on a scale of 0-100
-                        "image": song['album']['images']
-                    }) 
                 #get the artists
                 for artist in song['artists']:
                     #add the artist to the array
                     currentArtistArray.append(artist['name'])
-                    
-                #add that artist to the array 
-                topSongsInfo[index]['artists'] = currentArtistArray  
+                
+                id = song['id']
+                name = song['name']
+                popularity = float(song['popularity']) #how popular the song is on a scale of 0-100
+                cover_image =  song['album']['images'][0]['url']
+                release_date = song['album']['release_date']
+                release_date = str(release_date)
+                artists = currentArtistArray
+                song_link =  song['external_urls']['spotify']
                 #make the array empty for the next song 
                 currentArtistArray = []
-        return topSongsInfo
-
+                with connection:
+                    with connection.cursor() as cursor:
+                        #check to see if the user already has song info added to their account
+                        #cursor.execute(CHECK_IF_ALREADY_ADDED, ('top_songs', 'top_songs_token', session['userInfo'],))
+                        exists = None
+                        if exists:
+                            #yes it exists, so just update
+                            cursor.execute(UPDATE_TOP_SONGS, (id, name, artists, song_link, popularity, release_date, cover_image,))
+                        else:
+                            #no it doesnt exists, so create a new rows for 
+                            cursor.execute(INSERT_TOP_SONGS, (id, name, artists, song_link, popularity, release_date, cover_image,))
+        return Response("Added top songs to database successfully!", status=201)
     except Exception:
-        abort(Response("Spotify API Error", status=401))
+        return Response("Server ERROR", status=404)
 
 
 def getRecentlyPlayed():
     #basic authentication
     if 'access_token' not in session:
         return redirect('/login')
-    
+        
     #check refresh token
     if session['expires_at'] < datetime.now().timestamp():
         return redirect('/refresh-token')
-    
+        
     #check header
     headers = {
         'Authorization': f"Bearer {session['access_token']}",
     }
-    
+        
     recentlyPlayedURL = API_BASE_URL + '/me/player/recently-played?limit=50'
     
     try:
@@ -152,28 +161,41 @@ def getRecentlyPlayed():
         #get only the itmes
         recentlyPlayedResults = results["items"]
         #enumerate through itmes
-        for index, item in enumerate(recentlyPlayedResults):
+        for item in recentlyPlayedResults:
             song = item["track"]
             if song:
-                #add needed info
-                recentSongInfo.append({
-                    "id": song['id'],
-                    "name": song['name'],
-                    "popularity": song['popularity'], #how popular the song is on a scale of 0-100
-                    "images": song['album']['images']
-                    }) 
                 #get the artists
                 for artist in song['artists']:
                     #add the artist to the array
                     currentArtistArray.append(artist['name'])
-                        
-                #add that artist to the array 
-                recentSongInfo[index]['artists'] = currentArtistArray  
-                #make the array empty for the next song 
-                currentArtistArray = []
-        return recentSongInfo
-    except:
-        abort(Response("Error with Spotify API", status=400))
+                
+                #collect needed info respective variables
+                id = song['id'],
+                song_name =  song['name'],
+                popularity = song['popularity'], #how popular the song is on a scale of 0-100
+                cover_images = song['album']['images'][0]['url'],
+                artists = currentArtistArray,
+                song_link =  song['external_urls']['spotify']
+
+                #open connection to the database
+                with connection:
+                    with connection.cursor() as cursor:
+                        #check to see if the users info has already been added to the db
+                        #cursor.execute(CHECK_IF_ALREADY_ADDED, ('top_songs', 'top_songs_token', session['userInfo'],))
+                        exists = None
+                        if exists:
+                            #it has been added already so just update their recent songs
+                            cursor.execute(UPDATE_RECENT_SONGS, (id, song_name, artists, song_link, [cover_images], popularity,))
+                        else:
+                            #it hasnt been added to now create new rows with their recent songs
+                            cursor.execute(INSERT_RECENT_SONGS, (id, song_name, artists, song_link, [cover_images], popularity,))
+                    #make the array empty for the next song 
+                    currentArtistArray = []
+        return Response("Successfully added recent songs to database!", status=201)
+    except Exception:
+        return Response("Server ERROR", status=404)
+        
+
     
 #get the top artists    
 def getTopArtist():
@@ -189,30 +211,45 @@ def getTopArtist():
     headers = {
         'Authorization': f"Bearer {session['access_token']}",
     }
-    #create url for the top artists
-    topArtistsURL = API_BASE_URL + '/me/top/artists?limit=50'
-    #get request for artists data
-    results = requests.get(topArtistsURL, headers=headers)
-    #convert to dict
-    results = results.json()
-    #get only the top artists
-    topArtists = results["items"]
-    #set the artists array to be -
-    topArtistInfo = []
-    for artist in topArtists:
-        if artist:
-            #the top artist info
-            topArtistInfo.append(
-                {
-                    #get their name, genre, popularity and images associated with the artists
-                    "name": artist['name'],
-                    "genres": artist['genres'],
-                    "images": artist['images'],
-                    "popularity": artist['popularity']
-                }
-            )
-    #give back the array of dict with info
-    return topArtistInfo
+    try:
+        #create url for the top artists
+        topArtistsURL = API_BASE_URL + '/me/top/artists?limit=50'
+        #get request for artists data
+        results = requests.get(topArtistsURL, headers=headers)
+        #convert to dict
+        results = results.json()
+        #get only the top artists
+        topArtists = results["items"]
+        #set the artists array to be -
+        topArtistInfo = []
+        
+        for artist in topArtists:
+            if artist:
+                #add the top artist info to their respective variables
+                name = artist['name'],
+                artists_id = artist['id']
+                genres = artist['genres'],
+                images = artist['images'][0]['url'],
+                popularity =  artist['popularity']
+                artists_link = artist['external_urls']['spotify']
+                
+                #open connection to database
+                with connection:
+                    with connection.cursor() as cursor:
+                        #check if any info has already been added for the associated user
+                        #cursor.execute(CHECK_IF_ALREADY_ADDED, ('top_songs', 'top_songs_token', session['userInfo'],))
+                        exists = None
+                        if exists:
+                            #the users artists are already in the db, so just update it
+                            cursor.execute(UPDATE_TOP_ARTISTS, (artists_id, name, genres, images, artists_link, popularity,))                    
+                        else:
+                            #the users artists are not in the db, so add it
+                            cursor.execute(INSERT_TOP_ARTISTS, (artists_id, name, genres, images, artists_link, popularity,))
+        #give back the array of dict with info
+        return Response("Successfully Added Artists Info to DB", status=201)
+    
+    except Exception:
+        return Response("Server ERROR", status=201)
 
 
 
@@ -235,6 +272,7 @@ def getPlaylists():
     #playlistURL
     playlistURL = API_BASE_URL + '/me/playlists?limit=50&offset=0'
     #get all the playlist from a user
+    
     try:
         while True:
             #get a page of results
@@ -251,14 +289,27 @@ def getPlaylists():
                 if (item):
                     songLink =  item['tracks']['href']
                     # print(songFeatures)
-                    #add the important info the dict
-                    playlistInfo.append({
-                        "id": item['id'],
-                        "name": item['name'],
-                        "link": item['external_urls']['spotify'],
-                        "images": item['images'],
-                        "spotifyLink": item['tracks']['href']
-                    })
+                    
+                    #add the important info their respective variables
+                    id = item['id']
+                    name = item['name'],
+                    link = item['external_urls']['spotify'],
+                    images = item['images'][0]['url'],
+                    spotifyLink = item['tracks']['href']
+                    
+                    #open connection to database
+                    with connection:
+                        with connection.cursor() as cursor:
+                            #cursor.execute(CHECK_IF_ALREADY_ADDED, ('top_songs', 'top_songs_token', session['userInfo'],))
+                            exists = None
+                            #if there is nothing to a db associated with the user then make these calls 
+                            if exists:
+                                #update the playlists info with new data
+                                cursor.execute(UPDATE_PLAYLISTS, (id, name, link, images, spotifyLink))                    
+                            else:
+                                #insert new data into the db for a new user
+                                cursor.execute(INSERT_PLAYLISTS, (id, name, link, images, spotifyLink))
+                    
                     
             #if there is a next then we can get the next value
             if (results['next']):
@@ -267,8 +318,9 @@ def getPlaylists():
             else:
                 #leave the loop
                 break
+            
         #return the dict
-        return playlistInfo
+        return Response("Successfully Added Playlist Info to DB", status=201)
     #error with server
     except Exception:
         abort(Response(Exception, status=401))
@@ -289,70 +341,72 @@ def getPlaylistSongInfo(playlistID: str) -> list:
     headers = {
         'Authorization': f"Bearer {session['access_token']}",
     }
-    
-    #get the results
-    results = requests.get(songsAPIEndpoint, headers=headers)
-    results = results.json()
-    
-    #we only want the items object
-    tracksInfo = results['items']
-    
-    #arrays that will hold all the info
-    allArtists = []
-    allSongs = []
-    
-    #store the songIds in a string for the track analysis
-    songIds = ""
-    
-    #save the artists for a song in a single string (this is because of SQL not allowing multi-deminsonal arrays of different sizes)
-    artistsForSong = ""
-    
-    #count is 0
-    count = 0
-    
-    #loop through every track
-    for item in tracksInfo:
-        #take the song title
-        allSongs.append(item['track']['name'])
-        #take the name of the artist
-        artists =  item['track']['album']['artists']
+    try:
+        #get the results
+        results = requests.get(songsAPIEndpoint, headers=headers)
+        results = results.json()
         
-        #loop through the artist
-        for index, artist in enumerate(artists):
-            #check to see if the index is 0 so we won't add an @
-            if (index == 0):
-                artistsForSong = artist['name']
-            else:
-                #add the artist list
-                artistsForSong += "@" + artist['name'] #the @ is for future logic when distingushing between different arists
+        #we only want the items object
+        tracksInfo = results['items']
         
-        #add this to the artists to the array 
-        allArtists.append(artistsForSong)
+        #arrays that will hold all the info
+        allArtists = []
+        allSongs = []
         
-        #make this empty again for the next song
+        #store the songIds in a string for the track analysis
+        songIds = ""
+        
+        #save the artists for a song in a single string (this is because of SQL not allowing multi-deminsonal arrays of different sizes)
         artistsForSong = ""
         
-        #for the first 100 songs of the playlist check add their song id
-        if count < 100:
-            if count != 0:
-                #get the ID
-                songIds += ',' + item['track']['id']
-            else:
-                songIds = item['track']['id']
-            count += 1
-    #get the track features of a song
-    trackFeatures = analyzeSongs(songIds)
-    
-    #put all the song info into a dict 
-    allSongsInfo = {
-        "artists": allArtists, 
-        "titles": allSongs, 
-        "valence": trackFeatures[0],
-        "danceability": trackFeatures[1]
-    }
-    
-    #return the dictionary 
-    return allSongsInfo
+        #count is 0
+        count = 0
+        
+        #loop through every track
+        for item in tracksInfo:
+            #take the song title
+            allSongs.append(item['track']['name'])
+            #take the name of the artist
+            artists =  item['track']['album']['artists']
+            
+            #loop through the artist
+            for index, artist in enumerate(artists):
+                #check to see if the index is 0 so we won't add an @
+                if (index == 0):
+                    artistsForSong = artist['name']
+                else:
+                    #add the artist list
+                    artistsForSong += "@" + artist['name'] #the @ is for future logic when distingushing between different arists
+            
+            #add this to the artists to the array 
+            allArtists.append(artistsForSong)
+            
+            #make this empty again for the next song
+            artistsForSong = ""
+            
+            #for the first 100 songs of the playlist check add their song id
+            if count < 100:
+                if count != 0:
+                    #get the ID
+                    songIds += ',' + item['track']['id']
+                else:
+                    songIds = item['track']['id']
+                count += 1
+        #get the track features of a song
+        trackFeatures = analyzeSongs(songIds)
+        
+        #put all the song info into a dict 
+        allSongsInfo = {
+            "artists": allArtists, 
+            "titles": allSongs, 
+            "valence": trackFeatures[0],
+            "danceability": trackFeatures[1]
+        }
+        
+        #return the dictionary 
+        return allSongsInfo
+    except:
+        return Response("API ERROR", status=401)
 
 def analyzeSongs(songIds: str):
     
@@ -375,27 +429,33 @@ def analyzeSongs(songIds: str):
     #create url to analyze all the tracks
     songAnalysisEndpoint = API_BASE_URL + '/audio-features?ids=' + songIds
     
-    #get all the songs
-    songAnalysingResults = requests.get(songAnalysisEndpoint, headers=headers)
-    songAnalysingResults = songAnalysingResults.json()
-    
-    #only want audio_features object
-    songAnalysingResults = songAnalysingResults['audio_features']
-    #loop through every song
-    for song in songAnalysingResults:
-        #increment dancebility and valence
-        dancebilityAvg += song['danceability']
-        valenceAvg += song['valence'] 
+    try:
+        #get all the songs
+        songAnalysingResults = requests.get(songAnalysisEndpoint, headers=headers)
+        songAnalysingResults = songAnalysingResults.json()
         
-    #make songIds into an array then get its length to find num of songs
-    numberOfSongs = len(songIds.split(','))
-    #calc valence and dancebility of playlist
-    valenceAvg = valenceAvg / numberOfSongs
-    dancebilityAvg = dancebilityAvg / numberOfSongs
-    #add this to an array 
-    songFeaturesInfo = [valenceAvg, dancebilityAvg]
-    #return the info
-    return songFeaturesInfo
+        #only want audio_features object
+        songAnalysingResults = songAnalysingResults['audio_features']
+        #loop through every song
+        for song in songAnalysingResults:
+            #increment dancebility and valence
+            dancebilityAvg += song['danceability']
+            valenceAvg += song['valence'] 
+            
+        #make songIds into an array then get its length to find num of songs
+        numberOfSongs = len(songIds.split(','))
+        
+        #calc valence and dancebility of playlist
+        valenceAvg = valenceAvg / numberOfSongs
+        dancebilityAvg = dancebilityAvg / numberOfSongs
+
+        #add this to an array 
+        songFeaturesInfo = [valenceAvg, dancebilityAvg]
+        #return the info
+        return songFeaturesInfo
+    
+    except Exception: 
+        return Response("API ERROR", status=401)
         
         
     

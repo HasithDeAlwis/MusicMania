@@ -1,4 +1,4 @@
-from ..database import connection, CREATE_USER_TABLE, INSERT_USER, FIND_TOKEN, VERIFY_EMAIL, FIND_SAME_ACCOUNT
+from ..database import connection, CREATE_USER_TABLE, INSERT_USER, FIND_TOKEN, VERIFY_EMAIL, FIND_SAME_ACCOUNT, CHECK_IF_ALREADY_ADDED
 from ..tokens import encode_user
 import bcrypt
 from flask import flash, session, abort, Response
@@ -51,7 +51,7 @@ def authorize_user(identifier: str, password: str) -> Response:
     #query the db for someone with the same account as the identifier provided, it can be an email or username
     try:
         with connection:
-            with connection.cursor() as cursor:
+            with connection.cursor() as cursor:                
                 #find someone with the same eamil
                 cursor.execute(FIND_SAME_ACCOUNT, (identifier, identifier,))
                 #fetch the one account
