@@ -1,7 +1,7 @@
 from ..database import connection, CREATE_USER_TABLE, INSERT_USER, FIND_TOKEN, VERIFY_EMAIL, FIND_SAME_ACCOUNT, CHECK_IF_ALREADY_ADDED
 from ..tokens import encode_user
 import bcrypt
-from flask import flash, session, abort, Response
+from flask import flash, jsonify, make_response, session, abort, Response
 from ..tokens import decode_user
 
 DROP_TABLE = "DROP TABLE users"
@@ -43,6 +43,7 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
                 cursor.execute(INSERT_USER, (firstName, lastName, userName, email, hashedPassword, token,))
         #save the user token in the dbs
         session['userInfo'] = token   
+        return token
     else:
         abort(Response("Passwords do not match", status=400, content_type='text/plain'))
 
@@ -57,20 +58,21 @@ def authorize_user(identifier: str, password: str) -> Response:
                 #fetch the one account
                 account = cursor.fetchone()
     except:
-        abort(Response("Server Error", status=400))
+        return make_response(jsonify({'error': 'Database Connection Error'}), 401)
     
     #if the account exist then check to see if hte passwords of that account match
     if (account):
         if bcrypt.checkpw(password.encode('utf8'), account[5].encode('utf8')):
             #set the userInfo to be the session
             session['userInfo'] = account[6]
-            return Response("Successfuly Logged In!")
+            return make_response(jsonify({'message': 'Successfully Logged In!'}), 200)
         else:
             #password is not the same
-            abort(Response("Password or Username Does Not Match", status=401, content_type='text/plain')) 
+            return make_response(jsonify({'error': 'Password or Username Does Not Match'}), 404)
     else:
         #account does not exist
-        abort(Response("Password or Username Does Not Match", status=401, content_type='text/plain'))
+        return make_response(jsonify({'error': 'Password or Username Does Not Match'}), 404)
+    return 
 
 #helper function to confirm the email of a user
 def confirm_email(token: str):
@@ -97,15 +99,16 @@ def confirm_email(token: str):
                     with connection.cursor() as cursor:
                         #update the user to have isConfirmed
                         cursor.execute(VERIFY_EMAIL, (token,))
+                return make_response(jsonify({'message': 'Successfull Registered Email'}), 200)
             else:
                 #abort the program
-                abort(Response("Link has expired or is invalid", status=401, content_type='text/plain'))
+                return make_response(jsonify({'error': 'Link Experied or Unauthorized Access'}), 404)
         else:
             #the user is not logged in and trying to verify their email
-            abort(Response("Must Login First", status=400))
+                return make_response(jsonify({'error': 'Must Login First Before Registering Email'}), 404)
     except Exception:
         #Error with connecting to the database
-        abort(Response("Server Error", status=401))
+        return make_response(jsonify({'error': 'Link Experied or Unauthorized Access'}), 404)
 
 
     

@@ -32,6 +32,7 @@ def getToken():
     if 'error' in request.args:
         return jsonify({"error": requests.args['error']})
     
+    
     #create the request body for the post request to get the token
     if 'code' in request.args:
         req_body = {

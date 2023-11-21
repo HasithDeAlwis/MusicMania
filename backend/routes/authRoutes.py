@@ -1,20 +1,22 @@
 
-from flask import Blueprint, request, abort, Response, session, redirect, url_for
+from flask import Blueprint, jsonify, request, abort, Response, session, redirect, url_for, make_response
 from ..controllers.authController import registerUser, confirm_email, authorize_user
 from ..Middleware.emailLogic import makeMessage
 
 auth = Blueprint('auth', __name__)
 
 #create route to login
-@auth.route("/login", methods=["GET"])
+@auth.route("/login", methods=["POST"])
 def login():
+
     #check to see if the request is a get first
-    if request.method == "GET":
+    if request.method == "POST":
         #get the data from get request
         data = request.get_json()
         #get the userName and password
         identifier = data["identifier"]
         password = data["password"]
+
         return authorize_user(identifier, password)
     else:
         #someone attempted a non-get request for this
