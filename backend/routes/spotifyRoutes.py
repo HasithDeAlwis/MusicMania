@@ -12,13 +12,13 @@ spotify = Blueprint('spotify', __name__)
 def authenticate():
     #get the authorization url that spoitfy needs 
     auth_url = getSpotifyAuthURL()
+    print(auth_url)
     #go to the auth_url which calls our callback route
-    return redirect(auth_url)
+    return make_response(jsonify({'url': auth_url}), 200)
 
 #call back uri for the spotify API to call to atuhetnicate the API key
 @spotify.route("/callback")
 def setTokenInfo():
-    
     #get the token
     token_info = getToken()
     
@@ -27,8 +27,8 @@ def setTokenInfo():
     session['access_token'] = token_info['access_token'] 
     session['refresh_token'] = token_info['refresh_token']
     session['expires_at'] = datetime.now().timestamp() + token_info['expires_in']
-    playlistRoute = url_for('spotify.get_playlist')
-    return make_response(jsonify({'message': 'Successfully Logged In!'}), 200)
+    
+    return redirect('http://localhost:3000/')
 
 
 #route to refresh token once it has expired
@@ -39,6 +39,7 @@ def refresh_token():
     #change the session info
     session['access_token'] = new_token_info['access_token']
     session['expires_at'] = datetime.now().timestamp() + new_token_info['expires_in']
+    
     
 @spotify.route('/top-songs')
 def get_top_songs():

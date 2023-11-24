@@ -23,6 +23,8 @@ def getSpotifyAuthURL() -> str:
     
     #creating the auth url with params
     auth_url = f"{AUTH_URL}?{urllib.parse.urlencode(params)}"
+    #print auth url
+    print(auth_url)
     #returning the auth_url
     return auth_url
 

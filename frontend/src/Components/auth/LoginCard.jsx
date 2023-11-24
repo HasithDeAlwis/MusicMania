@@ -57,20 +57,13 @@ const LoginCard = () => {
         isClosable: true,
         position: "bottom",
       });
+      
+      const spotifyResponse = await fetch("/api/spotify/authenticate", {headers: new Headers({'content-type': 'application/json'}), method: "GET"});
+      const spotifyData = await spotifyResponse.json()
+      
+      //const spotifyRedirect = await fetch(spotifyData.url)
 
-    try {
-      const response = await fetch("/api/spotify/authenticate", {headers: new Headers({'content-type': 'application/json'}), method: "GET"});
-    } catch (error) {
-      toast({
-        title: "Error Occured!!",
-        status: "error",
-        description: error.message,
-        duration: 5000,
-        isClosable: true,
-        position: "bottom",
-      });
-    }
-  
+      window.location.href = spotifyData.url;
     } catch (error) {
       toast({
         title: "Error Occured!!",

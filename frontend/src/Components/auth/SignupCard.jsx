@@ -47,6 +47,8 @@ const history = useHistory();
 
     const response = await fetch("/api/auth/signup", {headers: new Headers({'content-type': 'application/json'}), method: "POST", body: JSON.stringify({"first-name": firstName, "last-name": lastName, "user-name": username, "email": email, "password": password, "confirm-password": confirmPassword})});
     const data = await response.json()
+    
+
     if (!response.ok) {
       throw new Error(`${data.error}`);
     }

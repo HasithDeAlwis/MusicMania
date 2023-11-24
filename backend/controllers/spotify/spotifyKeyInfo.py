@@ -7,7 +7,6 @@ load_dotenv()
 #Spotify API information
 API_INFORMATION = []
 
-print("hope this works", os.getenv('CLIENT_ID'))
 
 #getting secret info API_INFORMATION
 API_INFORMATION.append(os.getenv("CLIENT_ID2"))
