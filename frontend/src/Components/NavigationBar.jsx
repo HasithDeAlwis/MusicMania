@@ -14,6 +14,8 @@ import {
   IconButton,
   Image,
 } from "@chakra-ui/react";
+import { Link as ReactRouterLink } from 'react-router-dom'
+import { Link as ChakraLink, LinkProps } from '@chakra-ui/react'
 import logo from "../Assets/MusicManiaLogo.png"
 
 const NavigationBar = () => {
@@ -22,9 +24,11 @@ const NavigationBar = () => {
       <Flex justify={"space-between"}>
         <Box padding={"10px"} display={"flex"}>
           <Box pb={2} display={"flex"} justifyContent={{base: 'center', sm:'start'}} flexDir={{base: 'column', sm: 'row'}} wrap={{ base: 'nowrap', md: 'wrap' }}>
-            <Box maxW="300px" maxH="300px">
-              <Image src={logo}/>
-            </Box>   
+            <Box maxW="200px" maxH="200px">
+              <ChakraLink as={ReactRouterLink} to={'/profile'}>
+                <Image src={logo} alt="Logo" />
+              </ChakraLink>
+            </Box>
             <Input
               marginTop={"30px"}
               flexBasis={{sm: "50%"}}
@@ -54,7 +58,7 @@ const NavigationBar = () => {
           <Menu>
             {({ isOpen }) => (
               <>
-                <MenuButton as={Avatar} boxSize='3em'/>
+                <MenuButton as={Avatar} boxSize={{base: '2.5em', sm: '3em'}}/>
                 <MenuList>
                   <MenuItem>Profile</MenuItem>
                   <MenuItem>Playlist</MenuItem>

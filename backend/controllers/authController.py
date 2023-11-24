@@ -13,7 +13,7 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
     
     #if any fields are not entered then abort with a 400 error
     if (not firstName or not lastName or not userName or not email or not password or not confirmPassword):
-        abort(Response("Please enter all fields", status=400, content_type='text/plain'))
+        return make_response(jsonify({'error': 'Please enter all fields'}), 401)
     
     #check the database to see if anyone has the same email
     try:
@@ -24,11 +24,11 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
                 account = cursor.fetchone()
     except Exception:
         #error with db query
-        abort(Response("Server Error", status=401, content_type="text/plain"))
+        return make_response(jsonify({'error': 'Sorry we are experiencing internal errors please try again'}), 401)
 
     #if accounts is not empty then abort with 400 error
     if (account):
-        abort(Response("Account already exists", status=400, content_type='text/plain'))
+        return make_response(jsonify({'error': 'Account already exists'}), 401)
     
     #check to see if passwords match
     if (password == confirmPassword):
@@ -43,9 +43,9 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
                 cursor.execute(INSERT_USER, (firstName, lastName, userName, email, hashedPassword, token,))
         #save the user token in the dbs
         session['userInfo'] = token   
-        return token
+        return make_response(jsonify({'message': 'Succesfully Registered Account!', 'token': session['userInfo']}), 200)
     else:
-        abort(Response("Passwords do not match", status=400, content_type='text/plain'))
+        return make_response(jsonify({'error': 'Passwords do not match'}), 401)
 
 #authorize the user to login
 def authorize_user(identifier: str, password: str) -> Response:
@@ -65,14 +65,14 @@ def authorize_user(identifier: str, password: str) -> Response:
         if bcrypt.checkpw(password.encode('utf8'), account[5].encode('utf8')):
             #set the userInfo to be the session
             session['userInfo'] = account[6]
-            return make_response(jsonify({'message': 'Successfully Logged In!'}), 200)
+            return make_response(jsonify({'message': 'Successfully Logged In!', 'token': session['userInfo']}), 200)
         else:
             #password is not the same
             return make_response(jsonify({'error': 'Password or Username Does Not Match'}), 404)
     else:
         #account does not exist
         return make_response(jsonify({'error': 'Password or Username Does Not Match'}), 404)
-    return 
+     
 
 #helper function to confirm the email of a user
 def confirm_email(token: str):
@@ -85,8 +85,7 @@ def confirm_email(token: str):
     
     #if the result at the 7th index, the confirmed status is true, then do nothing
     if account[7] == True:
-        flash("Account already confirmed.", "success")
-        return "<h1>Success</h1>"
+        return make_response(jsonify({'message': 'Already Registered'}), 200)
     
     
     try:    

@@ -20,7 +20,7 @@ def login():
         return authorize_user(identifier, password)
     else:
         #someone attempted a non-get request for this
-        abort(Response("Unauthroized access", status=403))
+        return make_response(jsonify({'error': 'Unauthroized Access'}), 200)
     
 #create signup route
 @auth.route("/signup", methods=["POST"])
@@ -37,30 +37,39 @@ def signup():
         confirmPassword = data["confirm-password"]
 
         #use registerUser in the controllers to register the user to the db
-        registerUser(firstName, lastName, userName, email, password, confirmPassword)
+        return registerUser(firstName, lastName, userName, email, password, confirmPassword)
+
+    else:
+        #someone attempted a non-post request
+        return make_response(jsonify({'error': 'Unauthroized Access'}), 200)
+
+@auth.route("/make-email", methods=["POST"])
+def makeEmail():
+    if request.method == "POST":
         #create the url for sending the mail
         email_url = url_for("sendMail", token = session['userInfo'])
         #send the redirect to the mail
-        return redirect(email_url)
-    else:
-        #someone attempted a non-post request
-        abort(Response("Anauthorized access", status=403))
+        return redirect(email_url)   
 
 #route to confirm the user once they verify their email
 @auth.route("/confirm/<token>", methods = ["PUT"])
 def confirmUser(token):
     #check to see if the method was PUT
     if request.method == "PUT":
+        print("WHAT")
         #check to see if the correct user is trying to authenticate their account
         if session['userInfo'] == token:
+            print('hi')
             try:
                 #confirm the email address is valid
-                confirm_email(session['userInfo'])
+                return confirm_email(session['userInfo'])
                 #tell the user the resposne went good!
-                return Response("Email Confirmed!", status=200)
             except Exception:
-                abort(Response("Error 401 - Unable to Authorize Email", status=401))
+                return make_response(jsonify({'error': 'Unable to authorize email'}), 200)
+        else:
+            print("HEY")
+            return make_response(jsonify({'error': 'Must be Signed In To Confirm Email'}), 400)
     else:
-        abort(Response("Error - Email expired or invalid entry ", status=401))
+        return make_response(jsonify({'error': 'Unauthroized Access'}), 400)
     
     

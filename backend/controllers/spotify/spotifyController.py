@@ -57,7 +57,7 @@ def getToken():
 def refreshToken() -> jsonify:
     #if the token is not in session then get the user to authenticate it
     if 'refresh_token' not in session: 
-        return redirect('/api/spotify/authenticate')
+        return redirect('/api/auth/login')
     #check to see if the token is acc expired
     if (datetime.now().timeStamp > session['expires_at']):
         #create new body to refresh the token
@@ -78,11 +78,11 @@ def refreshToken() -> jsonify:
 def getTopSongs() -> dict:
     #basic authentication
     if 'access_token' not in session:
-        return redirect('/login')
+        return redirect('/api/auth/login')
         
     #check refresh token
     if session['expires_at'] < datetime.now().timestamp():
-        return redirect('/refresh-token')
+        return redirect('api/spotify/refresh-token')
         
     #check header
     headers = {

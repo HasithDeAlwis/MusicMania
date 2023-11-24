@@ -45,14 +45,38 @@ const history = useHistory();
         },
       };
 
-    const response = await fetch("/api/auth/signup", {headers: new Headers({'content-type': 'application/json'}), method: "POST", body: JSON.stringify({"first-name": firstName, "last-name": lastName, "user-name": username, "email": email, "password": password, "confirm-password": confirmPassword})});
-    const data = await response.json()
-    
-
-    if (!response.ok) {
-      throw new Error(`${data.error}`);
+    const signUp = await fetch("/api/auth/signup", {headers: new Headers({'content-type': 'application/json'}), method: "POST", body: JSON.stringify({"first-name": firstName, "last-name": lastName, "user-name": username, "email": email, "password": password, "confirm-password": confirmPassword})});
+    const signUpData = await signUp.json()
+    console.log(signUpData.token)
+    if (!signUp.ok) {
+      console.log('hi')
+      throw new Error(`${signUpData.error}`);
     }
-      history.push("/home");
+
+    const emailRequest = await fetch("/api/auth/make-email", {headers: new Headers({'content-type': 'application/json'}), method: "POST"})
+    const emailRequestData = await emailRequest.json()
+    console.log(emailRequestData)
+
+    //if (!emailRequestData.ok) {
+      //throw new Error(`${emailRequestData.error}`)
+    //}
+
+    const spotifyResponse = await fetch("/api/spotify/authenticate", {headers: new Headers({'content-type': 'application/json'}), method: "GET"});
+    const spotifyData = await spotifyResponse.json()
+    
+    if (!spotifyResponse.ok) {
+      throw new Error(`${spotifyData.error}`)
+    }
+
+    window.location.href = spotifyData.url;
+
+    toast({
+      title: "Login Successful",
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+      position: "bottom",
+    });
     } catch (error) {
       toast({
         title: "Error Occured!!",

@@ -13,7 +13,7 @@ WELCOME_TEXT = """Hi! Thanks for joining MusicMania! Verify your email with the 
 
 #helper function to make the message 
 def makeMessage(reciever: str, token: str) -> Message:
-    confirmEmail = f"http://127.0.0.1:8000/api/auth/confirm/{token}"
+    confirmEmail = f"http://127.0.0.1:3000/confirmation?auth={token}"
     try: 
         msg = Message(
             "MusicMania Account Confirmation",

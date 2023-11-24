@@ -49,7 +49,13 @@ const LoginCard = () => {
       if (!response.ok) {
         throw new Error(`${data.error}`);
       }
-      //const {data} = await axios.get("/api/auth/login", config, {identifier, password})
+      
+      const spotifyResponse = await fetch("/api/spotify/authenticate", {headers: new Headers({'content-type': 'application/json'}), method: "GET"});
+      const spotifyData = await spotifyResponse.json()
+      
+
+      window.location.href = spotifyData.url;
+
       toast({
         title: "Login Successful",
         status: "success",
@@ -57,13 +63,6 @@ const LoginCard = () => {
         isClosable: true,
         position: "bottom",
       });
-      
-      const spotifyResponse = await fetch("/api/spotify/authenticate", {headers: new Headers({'content-type': 'application/json'}), method: "GET"});
-      const spotifyData = await spotifyResponse.json()
-      
-      //const spotifyRedirect = await fetch(spotifyData.url)
-
-      window.location.href = spotifyData.url;
     } catch (error) {
       toast({
         title: "Error Occured!!",

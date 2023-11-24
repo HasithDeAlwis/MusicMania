@@ -53,4 +53,4 @@ def sendMail(token):
         msg = makeMessage(email['email'], session['userInfo'])
         print(msg.recipients, msg.sender)
         mail.send(msg)
-    return make_response(jsonify({'message': 'Registered! Confirmation Email Sent'}), 200)
+        return make_response(jsonify({'message': 'Registered! Confirmation Email Sent'}), 200)
