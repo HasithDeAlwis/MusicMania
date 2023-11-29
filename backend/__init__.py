@@ -27,7 +27,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SECRET_KEY'] = os.getenv("FLASK_SECRET_KEY")
     
     
-    #setting up the mail config for the appp
+#setting up the mail config for the appp
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USERNAME")
 app.config['MAIL_PORT'] = 465

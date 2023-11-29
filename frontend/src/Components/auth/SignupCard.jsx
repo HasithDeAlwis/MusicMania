@@ -19,14 +19,21 @@ const SignUpCard = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-const history = useHistory();
+  const history = useHistory();
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
   const loginSubmit = async () => {
     setLoading(true);
-    if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
+    if (
+      !firstName ||
+      !lastName ||
+      !username ||
+      !email ||
+      !password ||
+      !confirmPassword
+    ) {
       toast({
         title: "Please Fill all the Fields",
         status: "warning",
@@ -45,38 +52,55 @@ const history = useHistory();
         },
       };
 
-    const signUp = await fetch("/api/auth/signup", {headers: new Headers({'content-type': 'application/json'}), method: "POST", body: JSON.stringify({"first-name": firstName, "last-name": lastName, "user-name": username, "email": email, "password": password, "confirm-password": confirmPassword})});
-    const signUpData = await signUp.json()
-    console.log(signUpData.token)
-    if (!signUp.ok) {
-      console.log('hi')
-      throw new Error(`${signUpData.error}`);
-    }
+      const signUp = await fetch("/api/auth/signup", {
+        headers: new Headers({ "content-type": "application/json" }),
+        method: "POST",
+        body: JSON.stringify({
+          "first-name": firstName,
+          "last-name": lastName,
+          "user-name": username,
+          email: email,
+          password: password,
+          "confirm-password": confirmPassword,
+        }),
+      });
+      const signUpData = await signUp.json();
 
-    const emailRequest = await fetch("/api/auth/make-email", {headers: new Headers({'content-type': 'application/json'}), method: "POST"})
-    const emailRequestData = await emailRequest.json()
-    console.log(emailRequestData)
+      if (!signUp.ok) {
+        console.log("hi");
+        throw new Error(`${signUpData.error}`);
+      }
 
-    //if (!emailRequestData.ok) {
+      const emailRequest = await fetch("/api/auth/make-email", {
+        headers: new Headers({ "content-type": "application/json" }),
+        method: "POST",
+      });
+      const emailRequestData = await emailRequest.json();
+      console.log(emailRequestData);
+
+      //if (!emailRequestData.ok) {
       //throw new Error(`${emailRequestData.error}`)
-    //}
+      //}
 
-    const spotifyResponse = await fetch("/api/spotify/authenticate", {headers: new Headers({'content-type': 'application/json'}), method: "GET"});
-    const spotifyData = await spotifyResponse.json()
-    
-    if (!spotifyResponse.ok) {
-      throw new Error(`${spotifyData.error}`)
-    }
+      const spotifyResponse = await fetch("/api/spotify/authenticate", {
+        headers: new Headers({ "content-type": "application/json" }),
+        method: "GET",
+      });
+      const spotifyData = await spotifyResponse.json();
 
-    window.location.href = spotifyData.url;
+      if (!spotifyResponse.ok) {
+        throw new Error(`${spotifyData.error}`);
+      }
 
-    toast({
-      title: "Login Successful",
-      status: "success",
-      duration: 5000,
-      isClosable: true,
-      position: "bottom",
-    });
+      window.location.href = spotifyData.url;
+
+      toast({
+        title: "Login Successful",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
     } catch (error) {
       toast({
         title: "Error Occured!!",
@@ -150,7 +174,7 @@ const history = useHistory();
           </InputRightElement>
         </InputGroup>
       </FormControl>
-            <FormControl id="confirm-password" isRequired>
+      <FormControl id="confirm-password" isRequired>
         <FormLabel color={"#F05941"}>Confirm Password</FormLabel>
         <InputGroup>
           <Input
@@ -177,7 +201,7 @@ const history = useHistory();
         isLoading={loading}
         style={{ marginTop: 15 }}
         onClick={loginSubmit}
-        _hover={{bg: "#F05941"}}
+        _hover={{ bg: "#F05941" }}
       >
         Signup
       </Button>

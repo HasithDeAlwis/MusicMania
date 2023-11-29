@@ -53,7 +53,7 @@ def get_top_artist():
     artistJSON = getTopArtist()
     return artistJSON
 
-@spotify.route('/playlist')
+@spotify.route('/playlist', methods=["POST"])
 def get_playlist():
     playlistJSON = getPlaylists()
     return playlistJSON
@@ -73,5 +73,6 @@ def get_test():
         profile = spotifyData['user-profile']
         stats = spotifyData['user-stats']
         recent = spotifyData['recent-songs']
-        return addToDB(songs, artists, recent, profile, stats)
+        playlist = spotifyData['user-playlist']
+        return addToDB(songs, artists, recent, profile, stats, playlist)
         

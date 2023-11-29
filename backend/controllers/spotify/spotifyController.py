@@ -63,6 +63,7 @@ def refreshToken() -> jsonify:
     #if the token is not in session then get the user to authenticate it
     if 'refresh_token' not in session: 
         return redirect('/api/auth/login')
+    
     #check to see if the token is acc expired
     if (datetime.now().timeStamp > session['expires_at']):
         #create new body to refresh the token
@@ -297,6 +298,7 @@ def getPlaylists():
         'Authorization': f"Bearer {session['access_token']}",
     }
     
+    
     #only take certain info from the playlists returned
     playlistInfo = []
     #playlistURL
@@ -305,10 +307,14 @@ def getPlaylists():
     
     try:
         while True:
+            #print session info:
+            print("Session Info: ", session['access_token'])
+            
             #get a page of results
             results = requests.get(playlistURL, headers=headers)
             #turn to dict to make it subscriptable
             results = results.json()
+            
             #get only the items
             playlistPage = results["items"]
             
@@ -317,29 +323,22 @@ def getPlaylists():
             #get the playlist
             for item in playlistPage:
                 if (item):
+                    print(item)
                     songLink =  item['tracks']['href']
                     # print(songFeatures)
-                    
-                    #add the important info their respective variables
-                    id = item['id']
-                    name = item['name'],
-                    link = item['external_urls']['spotify'],
-                    images = item['images'][0]['url'],
-                    spotifyLink = item['tracks']['href']
-                    
-                    #open connection to database
-                    with connection:
-                        with connection.cursor() as cursor:
-                            #cursor.execute(CHECK_IF_ALREADY_ADDED, ('top_songs', 'top_songs_token', session['userInfo'],))
-                            exists = None
-                            #if there is nothing to a db associated with the user then make these calls 
-                            if exists:
-                                #update the playlists info with new data
-                                cursor.execute(UPDATE_PLAYLISTS, (id, name, link, images, spotifyLink))                    
-                            else:
-                                #insert new data into the db for a new user
-                                cursor.execute(INSERT_PLAYLISTS, (id, name, link, images, spotifyLink))
-                    
+                    if len(item['images']) > 0:
+                        coverImage = item['images'][0]['url']
+                    else:
+                        coverImage = ""
+                        
+                    playlistInfo.append({
+                        #add the important info their respective variables
+                        "id": item['id'],
+                        "playlist_name":  item['name'],
+                        "playlist_link" :item['external_urls']['spotify'],
+                        "cover_image": coverImage,
+                        "spotify_link": item['tracks']['href']
+                    })
                     
             #if there is a next then we can get the next value
             if (results['next']):
@@ -350,10 +349,10 @@ def getPlaylists():
                 break
             
         #return the dict
-        return Response("Successfully Added Playlist Info to DB", status=201)
+        return playlistInfo
     #error with server
     except Exception:
-        abort(Response(Exception, status=401))
+        make_response(jsonify({'error': Exception}))
 
 #get the info of a specific songs on a spotify playlist        
 def getPlaylistSongInfo(playlistID: str) -> list:
@@ -374,6 +373,7 @@ def getPlaylistSongInfo(playlistID: str) -> list:
     try:
         #get the results
         results = requests.get(songsAPIEndpoint, headers=headers)
+        print('hi????')
         results = results.json()
         
         #we only want the items object
@@ -549,7 +549,20 @@ def getSpotifyProfileStats(profile: list[dict], stats: dict):
     recentEnergy = stats[2]
     return spotifyUserName, linkToProfile, spotifyId, profilePicture, recentValence, recentDanceability, recentEnergy
 
-def addToDB(songs, artists, recent, profile, stats):
+def getPlaylist(playlists: list[dict]):
+    playlist_id = ""
+    playlist_name = ""
+    playlist_link = ""
+    playlist_cover = ""
+    for playlist in playlists:
+        playlist_id += "**" + playlist['id']
+        playlist_name += "**" + playlist['playlist_name']
+        playlist_link += "**" + playlist['playlist_link']
+        playlist_cover += "**" + playlist['cover_image']
+    
+    return playlist_id, playlist_name, playlist_link, playlist_cover
+
+def addToDB(songs, artists, recent, profile, stats, playlist):
     with connection:
         with connection.cursor() as cursor:
             
@@ -560,18 +573,19 @@ def addToDB(songs, artists, recent, profile, stats):
             artistsVars = getTopArtistsStrings(artists)
             songVars = getTopSongsStrings(songs)
             recentSongsVars = getRecentSongs(recent)
-            profile = getSpotifyProfileStats(profile, stats)
-            
+            profileVars = getSpotifyProfileStats(profile, stats)
+            playlistVars = getPlaylist(playlist)
             if exists:
                 cursor.execute(UPDATE_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
                 cursor.execute(UPDATE_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
-                cursor.execute(UPDATE_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
-                cursor.execute(UPDATE_SPOTIFY_PROFILE, (profile[0], profile[1], profile[2], profile[3], profile[4], profile[5], profile[6], session['userInfo'],))
+                cursor.execute(UPDATE_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], session['userInfo'],))
+                cursor.execute(UPDATE_PLAYLISTS, (playlistVars[0], playlistVars[1], playlistVars[2], playlistVars[3], session['userInfo'],))
             else:  
                 cursor.execute(INSERT_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
                 cursor.execute(INSERT_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
                 cursor.execute(INSERT_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
-                cursor.execute(INSERT_SPOTIFY_PROFILE, (profile[0], profile[1], profile[2], profile[3], profile[4], profile[5], profile[6], session['userInfo']))
+                cursor.execute(INSERT_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], session['userInfo']))
+                cursor.execute(INSERT_PLAYLISTS, (playlistVars[0], playlistVars[1], playlistVars[2], playlistVars[3], session['userInfo'],))
 
             
 

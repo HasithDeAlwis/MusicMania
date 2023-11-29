@@ -19,6 +19,7 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
     try:
         with connection:
             with connection.cursor() as cursor:
+                print('hi bby')
                 #find someone with the same eamil
                 cursor.execute(FIND_SAME_ACCOUNT, (email, userName,))
                 account = cursor.fetchone()
@@ -32,6 +33,7 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
     
     #check to see if passwords match
     if (password == confirmPassword):
+        print('hi bby')
         #hash password
         hashedPassword = bcrypt.hashpw(password.encode('utf8'), bcrypt.gensalt()) 
         with connection:
@@ -66,6 +68,8 @@ def authorize_user(identifier: str, password: str) -> Response:
         if bcrypt.checkpw(password.encode('utf8'), account[5].encode('utf8')):
             #set the userInfo to be the session
             session['userInfo'] = account[6]
+            session.modified = True  # Mark the session as modified
+
             return make_response(jsonify({'message': 'Successfully Logged In!', 'token': session['userInfo']}), 200)
         else:
             #password is not the same

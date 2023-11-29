@@ -1,6 +1,7 @@
 import React from "react";
 import { useEffect, useState, useRef } from "react";
-import { useToast } from "@chakra-ui/react";
+import { useToast, Box, Flex } from "@chakra-ui/react";
+
 const ProfilePage = () => {
   const isInitialMount = useRef(true);
 
@@ -8,6 +9,7 @@ const ProfilePage = () => {
   const [artists, setArtists] = useState();
   const [recents, setRecents] = useState();
   const [stats, setStats] = useState();
+  const [playlist, setPlaylist] = useState();
   const [profile, setProfile] = useState();
   const toast = useToast();
 
@@ -129,16 +131,44 @@ const ProfilePage = () => {
       }
     };
 
+    const getPlaylist = async () => {
+      try {
+        //Make call to get the spotify api to get the users top songs
+        const allPlaylistResponse = await fetch("/api/spotify/playlist", {
+          headers: new Headers({ "content-type": "application/json" }),
+          method: "POST",
+        });
+
+        const allPlaylsitData = await allPlaylistResponse.json();
+        const data = await allPlaylsitData;
+        if (!allPlaylistResponse.ok) {
+          throw new Error(`${allPlaylsitData.error}`);
+        }
+
+        setPlaylist(() => {
+          return data;
+        });
+      } catch (error) {
+        toast({
+          title: "Error Occured!!",
+          status: "error",
+          description: error.message,
+          duration: 5000,
+          isClosable: true,
+          position: "bottom",
+        });
+      }
+    };
+
     const fetchData = async () => {
       await getTopSongs();
       await getProfileInfo();
       await getRecentlyPlayed();
+      await getPlaylist();
       await getTopArtists();
     };
     fetchData();
   }, []);
-
-  const getUserPlaylist()
 
   useEffect(() => {
     const addToDB = async (
@@ -146,7 +176,8 @@ const ProfilePage = () => {
       artists,
       recentSongs,
       recentStats,
-      profile
+      profile,
+      playlist
     ) => {
       try {
         //Make call to get the spotify api to get the users top songs
@@ -159,6 +190,7 @@ const ProfilePage = () => {
             "top-songs": songs,
             "top-artists": artists,
             "user-stats": recentStats,
+            "user-playlist": playlist,
           }),
         });
         const dbData = await dbResponse.json();
@@ -176,11 +208,18 @@ const ProfilePage = () => {
         });
       }
     };
-    console.log(recents);
-    addToDB(songs, artists, recents, stats, profile);
+    console.log(playlist);
+    addToDB(songs, artists, recents, stats, profile, playlist);
   }, [artists]);
-
-  return <>Helo!</>;
+  return (
+    <>
+      <Flex minW={"100%"} justify={"space-around"}>
+        <Box>Hiya</Box>
+        <Box>Bye</Box>
+        <Box>Another One</Box>
+      </Flex>
+    </>
+  );
 };
 
 export default ProfilePage;

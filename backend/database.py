@@ -107,14 +107,18 @@ CHECK_IF_ALREADY_ADDED = (
 
 
 INSERT_PLAYLISTS = (
-    """INSERT INTO playlists (playlist_id, playlist_name, playlist_link, playlist_cover, spotify_link) VALUES (%s, %s, %s, %s, %s)"""
+    """INSERT INTO playlists (playlist_id, playlist_name, playlist_link, playlist_cover, playlist_token) VALUES (%s, %s, %s, %s, %s)"""
 )
 
 UPDATE_PLAYLISTS = (
-    """UPDATE playlist
+    """UPDATE playlists
     SET
-    playlist_name = ARRAY%s,
-    playlist_dancebility = ARRAY%s,"""
+    playlist_id = %s,
+    playlist_name = %s,
+    playlist_link = %s,
+    playlist_cover = %s
+    WHERE playlist_token = %s;
+    """
 )
 FIND_TOKEN = (
     """SELECT * FROM users
