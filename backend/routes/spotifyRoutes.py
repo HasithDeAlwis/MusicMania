@@ -1,6 +1,6 @@
 #this file will contain all the API routes that will make calls to the spotify API
 from flask import Blueprint, redirect, session, request, jsonify, Response, url_for, make_response
-from ..controllers.spotify.spotifyController import getSpotifyAuthURL, getToken, refreshToken, getPlaylists, getTopSongs, getRecentlyPlayed, getTopArtist, getPlaylistSongInfo
+from ..controllers.spotify.spotifyController import getSpotifyAuthURL, getToken, refreshToken, getPlaylists, getTopSongs, getRecentlyPlayed, getTopArtist, getPlaylistSongInfo, getUserProfile, addToDB
 from datetime import datetime
 import requests 
 
@@ -20,15 +20,8 @@ def authenticate():
 @spotify.route("/callback")
 def setTokenInfo():
     #get the token
-    token_info = getToken()
-    
-    
-    #set the session info
-    session['access_token'] = token_info['access_token'] 
-    session['refresh_token'] = token_info['refresh_token']
-    session['expires_at'] = datetime.now().timestamp() + token_info['expires_in']
-    
-    return redirect('http://localhost:3000/')
+    getToken()
+    return redirect("http://127.0.0.1:3000/profile")
 
 
 #route to refresh token once it has expired
@@ -40,19 +33,22 @@ def refresh_token():
     session['access_token'] = new_token_info['access_token']
     session['expires_at'] = datetime.now().timestamp() + new_token_info['expires_in']
     
+   
+@spotify.route('/get-profile', methods=["POST", "GET"]) 
+def get_user_profile():
+    return getUserProfile()
     
-@spotify.route('/top-songs')
+@spotify.route('/top-songs', methods=["POST"])
 def get_top_songs():
     songsJSON = getTopSongs()
     return songsJSON
 
-@spotify.route('/recently-played')
+@spotify.route('/recently-played', methods=["POST"])
 def get_recently_played():
     recentlyPlayedJSON = getRecentlyPlayed()
     return recentlyPlayedJSON
 
-
-@spotify.route('/top-artists')
+@spotify.route('/top-artists', methods=["POST"])
 def get_top_artist():
     artistJSON = getTopArtist()
     return artistJSON
@@ -67,22 +63,15 @@ def get_playlist_info(id):
     return getPlaylistSongInfo(id)
 
 
-@spotify.route('/testing')
+@spotify.route('/update-user-info', methods = ["POST"])
 def get_test():
-    #basic authentication
-    if 'access_token' not in session:
-        return redirect('/login')
-    
-    #check refresh token
-    if session['expires_at'] < datetime.now().timestamp():
-        return redirect('/refresh-token')
-    
-    #check header
-    headers = {
-        'Authorization': f"Bearer {session['access_token']}",
-    }
-    
-    songAnalysisEndpoint = 'https://api.spotify.com/v1/audio-features?ids=7ouMYWpwJ422jRcDASZB7P'
-    results = requests.get(songAnalysisEndpoint, headers=headers)
-    results = results.json()
-    return results;
+    if request.method == "POST":
+        #get the data from the request
+        spotifyData = request.get_json()
+        songs = spotifyData['top-songs']
+        artists = spotifyData['top-artists']
+        profile = spotifyData['user-profile']
+        stats = spotifyData['user-stats']
+        recent = spotifyData['recent-songs']
+        return addToDB(songs, artists, recent, profile, stats)
+        

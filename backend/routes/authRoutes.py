@@ -56,10 +56,8 @@ def makeEmail():
 def confirmUser(token):
     #check to see if the method was PUT
     if request.method == "PUT":
-        print("WHAT")
         #check to see if the correct user is trying to authenticate their account
         if session['userInfo'] == token:
-            print('hi')
             try:
                 #confirm the email address is valid
                 return confirm_email(session['userInfo'])

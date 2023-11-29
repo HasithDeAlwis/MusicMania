@@ -26,71 +26,85 @@ INSERT_USER = (
 
 INSERT_TOP_SONGS = (
     """
-    INSERT INTO top_songs (song_id, song_name, artists_name, song_link, popularity, release_date, cover_images) VALUES (%s, %s, %s, %s, %s, %s, %s)
+    INSERT INTO top_songs (song_id, song_name, artists_name, song_link, popularity, release_date, cover_images, top_songs_token) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """
 )
 
 UPDATE_TOP_SONGS = (
     """UPDATE top_songs
-        SET
-        song_id = %s
-        song_names = %s, 
-        artists_name = %s, 
-        song_link = %s, 
-        popularity = %s,
-        release_date = %s,
-        cover_images = %s
-        WHERE top_songs_token = %s;"""
+    SET
+    song_id = %s,
+    song_name = %s,
+    artists_name = %s, 
+    song_link = %s,
+    popularity = %s,
+    release_date = %s,
+    cover_images = %s
+    WHERE top_songs_token = %s;
+    """
+)
+
+DELTE_FROM_TABLE = (
+    """DELETE FROM {} 
+    WHERE {} = %s;"""
 )
 
 INSERT_TOP_ARTISTS = (
-    """INSERT INTO top_artists (artist_id, artist_name, genres, cover_image, artist_link, popularity) VALUES(%s, %s, %s, %s, %s, %s);"""
+    """INSERT INTO top_artists (artist_id, artist_name, genres, cover_image, artist_link, popularity, top_artists_token) VALUES(%s, %s, %s, %s, %s, %s, %s);"""
 )
 
+INSERT_SPOTIFY_PROFILE = (
+    """INSERT INTO spotify_profile (display_name, link_to_profile, spotify_id, profile_picture, valence, energy, danceability, spotify_profile_token) VALUES(%s, %s, %s, %s, %s, %s, %s, %s);"""
+)
+UPDATE_SPOTIFY_PROFILE = (
+    """UPDATE spotify_profile
+    SET 
+    display_name = %s,
+    link_to_profile = %s,
+    spotify_id = %s,
+    profile_picture = %s,
+    valence = %s,
+    energy = %s,
+    danceability = %s
+    WHERE spotify_profile_token = %s;"""
+)
+
+
 UPDATE_TOP_ARTISTS = (
-    """UPDATE top_songs
+    """UPDATE top_artists
         SET
         artist_id = %s,
         artist_name = %s,
-        popularity = %s, 
-        image = ARRAY%s, 
-        genres = ARRAY%s, 
-        WHERE artist_token = %s;"""
+        genres = %s,
+        cover_image = %s, 
+        artist_link = %s,
+        popularity = %s
+        WHERE top_artists_token = %s;"""
 )
 
 INSERT_RECENT_SONGS = (
-    """INSERT INTO recent_songs (song_id, song_name, artists_name, song_link, cover_images, popularity) VALUES (%s, %s, %s, %s, %s, %s)"""
+    """INSERT INTO recent_songs (song_id, song_name, artists_name, song_link, cover_images, recent_songs_token) VALUES (%s, %s, %s, %s, %s, %s)"""
 )
 
 UPDATE_RECENT_SONGS = (
     """UPDATE recent_songs
     SET 
-    song_id = %s
-    song_name = %s
+    song_id = %s,
+    song_name = %s,
     artists_name = %s,
-    song_link = %s
+    song_link = %s,
     cover_images = %s
-    popularity = %s,
-    WHERE %s = %s
+    WHERE recent_songs_token = %s;
     """
 )
 
 
 
 CHECK_IF_ALREADY_ADDED = (
-    """SELECT * FROM %s 
-    WHERE %s = %s"""
+    """SELECT * FROM {}
+    WHERE {} = %s"""
 )
 
-
-UPDATE_RECENT_SONGS = (
-    """UPDATE recent_songs
-    SET 
-    recent_songs = ARRAY%s,
-    popularity = %s,
-    image = ARRAY%s,
-    WHERE recent_songs_token = %s;"""
-)
 
 INSERT_PLAYLISTS = (
     """INSERT INTO playlists (playlist_id, playlist_name, playlist_link, playlist_cover, spotify_link) VALUES (%s, %s, %s, %s, %s)"""

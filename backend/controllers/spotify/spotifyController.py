@@ -1,9 +1,11 @@
 from .spotifyKeyInfo import API_INFORMATION, AUTH_URL, TOKEN_URL, API_BASE_URL
 import urllib.parse
-from flask import request, jsonify, redirect, session, url_for, abort, Response
+from flask import request, jsonify, redirect, session, url_for, abort, Response, make_response
 import requests
 from datetime import datetime
-from ...database import connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS
+from ...database import connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_SPOTIFY_PROFILE, UPDATE_SPOTIFY_PROFILE
+import json
+
 
 #returns the url that will be called to start the OAuth Code Flow
 def getSpotifyAuthURL() -> str:
@@ -27,7 +29,7 @@ def getSpotifyAuthURL() -> str:
     print(auth_url)
     #returning the auth_url
     return auth_url
-
+    
 #get the token from the spotify API
 def getToken():
     #error occured
@@ -49,8 +51,11 @@ def getToken():
         response = requests.post(TOKEN_URL, data=req_body)
         #save the token_info to json()
         token_info = response.json()
-        #return it
-        return token_info
+        
+        #set the session info
+        session['access_token'] = token_info['access_token'] 
+        session['refresh_token'] = token_info['refresh_token']
+        session['expires_at'] = datetime.now().timestamp() + token_info['expires_in']
 
 
 #when the token expires refresh the token
@@ -73,6 +78,40 @@ def refreshToken() -> jsonify:
     #use json to convert token data
     new_token_info = response.json()
     return new_token_info
+
+
+#get the spotify profile of a user
+def getUserProfile():
+    print("Session Info: ", session['userInfo'])
+
+    #basic authentication
+    if not ('access_token' in session):
+        return redirect('/api/auth/login')
+        
+    #check refresh token
+    if session['expires_at'] < datetime.now().timestamp():
+        return redirect('api/spotify/refresh-token')
+        
+    #check header
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}",
+    }
+    profileInfo = []
+    profileURL = API_BASE_URL + '/me'
+    
+    try:
+        profile = requests.get(profileURL, headers=headers)
+        profile = profile.json()
+        profileInfo.append({
+        "spotifyUserName": profile['display_name'],
+        "linkToProfile":profile['external_urls']['spotify'],
+        "spotifyId":profile['id'],
+        "profilePicture": profile['images'][0]['url'],
+        })
+        return jsonify(profileInfo)
+    except Exception:
+        return make_response(jsonify({'error': 'Server Error'}), 401)
+    
 
 #a function to get the top songs
 def getTopSongs() -> dict:
@@ -101,6 +140,7 @@ def getTopSongs() -> dict:
         results = results.json()
         #get only the itmes
         topSongsResult = results["items"]
+
         #enumerate through itmes
         for song in topSongsResult:
             if song:
@@ -108,34 +148,24 @@ def getTopSongs() -> dict:
                 for artist in song['artists']:
                     #add the artist to the array
                     currentArtistArray.append(artist['name'])
-                
-                id = song['id']
-                name = song['name']
-                popularity = float(song['popularity']) #how popular the song is on a scale of 0-100
-                cover_image =  song['album']['images'][0]['url']
-                release_date = song['album']['release_date']
-                release_date = str(release_date)
-                artists = currentArtistArray
-                song_link =  song['external_urls']['spotify']
+                topSongsInfo.append({
+                    "id": song['id'],
+                    "name": song['name'],
+                    "popularity": float(song['popularity']), #how popular the song is on a scale of 0-100
+                    "cover_image":  song['album']['images'][0]['url'],
+                    "release_date": str(song['album']['release_date']),
+                    "artists": currentArtistArray,
+                    "song_link":  song['external_urls']['spotify'],
+                })
                 #make the array empty for the next song 
                 currentArtistArray = []
-                with connection:
-                    with connection.cursor() as cursor:
-                        #check to see if the user already has song info added to their account
-                        #cursor.execute(CHECK_IF_ALREADY_ADDED, ('top_songs', 'top_songs_token', session['userInfo'],))
-                        exists = None
-                        if exists:
-                            #yes it exists, so just update
-                            cursor.execute(UPDATE_TOP_SONGS, (id, name, artists, song_link, popularity, release_date, cover_image,))
-                        else:
-                            #no it doesnt exists, so create a new rows for 
-                            cursor.execute(INSERT_TOP_SONGS, (id, name, artists, song_link, popularity, release_date, cover_image,))
-        return Response("Added top songs to database successfully!", status=201)
+        return jsonify(topSongsInfo)
     except Exception:
-        return Response("Server ERROR", status=404)
+        return make_response(jsonify({'error': Exception}), 401)
 
 
 def getRecentlyPlayed():
+    userInfo = json.dumps(session['userInfo'])
     #basic authentication
     if 'access_token' not in session:
         return redirect('/login')
@@ -143,22 +173,29 @@ def getRecentlyPlayed():
     #check refresh token
     if session['expires_at'] < datetime.now().timestamp():
         return redirect('/refresh-token')
-        
+    
     #check header
     headers = {
         'Authorization': f"Bearer {session['access_token']}",
     }
-        
+    
+                
     recentlyPlayedURL = API_BASE_URL + '/me/player/recently-played?limit=50'
     
     try:
         #get the results of the recently played
         results = requests.get(recentlyPlayedURL, headers=headers)
+        
         #make it a dict
         results = results.json()
+        #all song ids
+        songIds = ""
+        
+        #popularity average
+        popularityAvg = 0
         
         #where we store the recent songs
-        recentSongInfo = []
+        recentSongsInfo = []
         currentArtistArray = [] #store the artists for each song
         
         #get only the itmes
@@ -166,42 +203,43 @@ def getRecentlyPlayed():
         #enumerate through itmes
         for item in recentlyPlayedResults:
             song = item["track"]
+
             if song:
                 #get the artists
                 for artist in song['artists']:
                     #add the artist to the array
                     currentArtistArray.append(artist['name'])
+                    
+                recentSongsInfo.append(
+                    {
+                    #collect needed info respective variables
+                    "id": song['id'],
+                    "song_name":  song['name'],
+                    "cover_images": song['album']['images'][0]['url'],
+                    "artists": currentArtistArray,
+                    "song_link":   song['external_urls']['spotify'],
+                    }
+                )
+                popularityAvg += song['popularity']
                 
-                #collect needed info respective variables
-                id = song['id'],
-                song_name =  song['name'],
-                popularity = song['popularity'], #how popular the song is on a scale of 0-100
-                cover_images = song['album']['images'][0]['url'],
-                artists = currentArtistArray,
-                song_link =  song['external_urls']['spotify']
+                
+                songIds += song['id'] + ","
 
-                #open connection to the database
-                with connection:
-                    with connection.cursor() as cursor:
-                        #check to see if the users info has already been added to the db
-                        #cursor.execute(CHECK_IF_ALREADY_ADDED, ('top_songs', 'top_songs_token', session['userInfo'],))
-                        exists = None
-                        if exists:
-                            #it has been added already so just update their recent songs
-                            cursor.execute(UPDATE_RECENT_SONGS, (id, song_name, artists, song_link, [cover_images], popularity,))
-                        else:
-                            #it hasnt been added to now create new rows with their recent songs
-                            cursor.execute(INSERT_RECENT_SONGS, (id, song_name, artists, song_link, [cover_images], popularity,))
-                    #make the array empty for the next song 
-                    currentArtistArray = []
-        return Response("Successfully added recent songs to database!", status=201)
+                #make the array empty for the next song 
+                currentArtistArray = []
+        popularityAvg /= 50
+        recentAnalysis = analyzeSongs(songIds)
+        recentAnalysis.append(popularityAvg)
+        return make_response(jsonify({'analysis': recentAnalysis, 'recents': recentSongsInfo}), 200)
     except Exception:
-        return Response("Server ERROR", status=404)
+        return make_response(jsonify({'error': 'Unable to add recent songs'}), 401)
+
         
 
     
 #get the top artists    
 def getTopArtist():
+    userInfo = str(session['userInfo'])
     #basic authentication
     if 'access_token' not in session:
         return redirect('/api/spotify/authenticate')
@@ -224,35 +262,24 @@ def getTopArtist():
         #get only the top artists
         topArtists = results["items"]
         #set the artists array to be -
-        topArtistInfo = []
-        
+        userTopArtistsInfo = []
         for artist in topArtists:
             if artist:
-                #add the top artist info to their respective variables
-                name = artist['name'],
-                artists_id = artist['id']
-                genres = artist['genres'],
-                images = artist['images'][0]['url'],
-                popularity =  artist['popularity']
-                artists_link = artist['external_urls']['spotify']
-                
-                #open connection to database
-                with connection:
-                    with connection.cursor() as cursor:
-                        #check if any info has already been added for the associated user
-                        #cursor.execute(CHECK_IF_ALREADY_ADDED, ('top_songs', 'top_songs_token', session['userInfo'],))
-                        exists = None
-                        if exists:
-                            #the users artists are already in the db, so just update it
-                            cursor.execute(UPDATE_TOP_ARTISTS, (artists_id, name, genres, images, artists_link, popularity,))                    
-                        else:
-                            #the users artists are not in the db, so add it
-                            cursor.execute(INSERT_TOP_ARTISTS, (artists_id, name, genres, images, artists_link, popularity,))
+                userTopArtistsInfo.append(
+                {              
+                "name": artist['name'],
+                "id":  artist['id'],
+                "genres": artist['genres'],
+                "images":  artist['images'][0]['url'],
+                "popularity":  artist['popularity'],
+                "artists_link":  artist['external_urls']['spotify'],
+                })
         #give back the array of dict with info
-        return Response("Successfully Added Artists Info to DB", status=201)
-    
+        return jsonify(userTopArtistsInfo)
     except Exception:
-        return Response("Server ERROR", status=201)
+        return make_response(jsonify({'error': 'Successfully added song to DB!'}), 401)
+
+    
 
 
 
@@ -403,7 +430,8 @@ def getPlaylistSongInfo(playlistID: str) -> list:
             "artists": allArtists, 
             "titles": allSongs, 
             "valence": trackFeatures[0],
-            "danceability": trackFeatures[1]
+            "danceability": trackFeatures[1],
+            "energy": trackFeatures[2]
         }
         
         #return the dictionary 
@@ -428,7 +456,7 @@ def analyzeSongs(songIds: str):
     #set valence and avg to 0 for counting 
     valenceAvg = 0
     dancebilityAvg = 0
-    
+    energyAvg = 0
     #create url to analyze all the tracks
     songAnalysisEndpoint = API_BASE_URL + '/audio-features?ids=' + songIds
     
@@ -444,7 +472,8 @@ def analyzeSongs(songIds: str):
             #increment dancebility and valence
             dancebilityAvg += song['danceability']
             valenceAvg += song['valence'] 
-            
+            energyAvg += song['energy']
+
         #make songIds into an array then get its length to find num of songs
         numberOfSongs = len(songIds.split(','))
         
@@ -453,12 +482,104 @@ def analyzeSongs(songIds: str):
         dancebilityAvg = dancebilityAvg / numberOfSongs
 
         #add this to an array 
-        songFeaturesInfo = [valenceAvg, dancebilityAvg]
+        songFeaturesInfo = [valenceAvg, dancebilityAvg, energyAvg]
         #return the info
         return songFeaturesInfo
     
     except Exception: 
         return Response("API ERROR", status=401)
+def getTopArtistsStrings(artists: list[dict]) -> (str, str, str, str, str):
+    name = ""
+    artists_id = ""
+    genres = ""
+    images = ""
+    popularity = ""
+    artists_link = ""
+    
+    for artist in artists:
+        name += "**" + artist['name']
+        artists_id += "**" + artist['id']
+        genres += "**" + '&&'.join(artist['genres'])
+        images += "**" + artist['images']
+        popularity += "**" + str(artist['popularity'])
+        artists_link += "**" + artist['artists_link']
+    return artists_id, name, genres, images, artists_link, popularity
+
+def getTopSongsStrings(songs: list[dict]):
+    song_id = ""
+    song_name = ""
+    song_artists = ""
+    song_link = ""
+    popularity = ""
+    release_date = ""
+    cover_image = ""
+    for song in songs:
+
+        song_id += "**" + song['id']
+        song_name += "**" + song['name']
+        popularity += "**" +  str(song['popularity']) #how popular the song is on a scale of 0-100
+        cover_image  += "**" + song["cover_image"]
+        release_date += "**" + song['release_date']
+        song_artists += "**" + '&&'.join(song['artists'])
+        song_link +="**" + song['song_link']
+    return song_id, song_name, song_artists, song_link, popularity, release_date, cover_image
+
+def getRecentSongs(recents: list[dict]):
+    song_id = ""
+    song_name = ""
+    artist_name = ""
+    song_link = ""
+    cover_image = ""
+    for song in recents:
+        #collect needed info respective variables
+        song_id += "**" + str(song['id'])
+        song_name  +=  "**" +  song['song_name']
+        artist_name += "**" +  '&&'.join(song['artists'])
+        cover_image +=   "**" +  song['cover_images']
+        song_link +=  "**" +  song['song_link']
+    return song_id, song_name, artist_name, cover_image, song_link
+
+def getSpotifyProfileStats(profile: list[dict], stats: dict):
+    spotifyUserName = profile['spotifyUserName']
+    linkToProfile = profile['linkToProfile']
+    spotifyId = profile['spotifyId']
+    profilePicture = profile['profilePicture']
+    recentValence = stats[0]
+    recentDanceability = stats[1]
+    recentEnergy = stats[2]
+    return spotifyUserName, linkToProfile, spotifyId, profilePicture, recentValence, recentDanceability, recentEnergy
+
+def addToDB(songs, artists, recent, profile, stats):
+    with connection:
+        with connection.cursor() as cursor:
+            
+            existsQuerry = CHECK_IF_ALREADY_ADDED.format('top_artists', 'top_artists_token')
+            cursor.execute(existsQuerry, (session['userInfo'],))
+            exists = cursor.fetchall()
+
+            artistsVars = getTopArtistsStrings(artists)
+            songVars = getTopSongsStrings(songs)
+            recentSongsVars = getRecentSongs(recent)
+            profile = getSpotifyProfileStats(profile, stats)
+            
+            if exists:
+                cursor.execute(UPDATE_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
+                cursor.execute(UPDATE_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
+                cursor.execute(UPDATE_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
+                cursor.execute(UPDATE_SPOTIFY_PROFILE, (profile[0], profile[1], profile[2], profile[3], profile[4], profile[5], profile[6], session['userInfo'],))
+            else:  
+                cursor.execute(INSERT_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
+                cursor.execute(INSERT_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
+                cursor.execute(INSERT_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
+                cursor.execute(INSERT_SPOTIFY_PROFILE, (profile[0], profile[1], profile[2], profile[3], profile[4], profile[5], profile[6], session['userInfo']))
+
+            
+
+        
+        connection.commit()
+    return make_response(jsonify({'error': 'Successfully added song to DB!'}), 200)
+ 
+    
         
         
     
