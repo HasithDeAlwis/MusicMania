@@ -54,7 +54,7 @@ INSERT_TOP_ARTISTS = (
 )
 
 INSERT_SPOTIFY_PROFILE = (
-    """INSERT INTO spotify_profile (display_name, link_to_profile, spotify_id, profile_picture, valence, energy, danceability, spotify_profile_token) VALUES(%s, %s, %s, %s, %s, %s, %s, %s);"""
+    """INSERT INTO spotify_profile (display_name, link_to_profile, spotify_id, profile_picture, valence, energy, danceability, popularity, spotify_profile_token) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
 )
 UPDATE_SPOTIFY_PROFILE = (
     """UPDATE spotify_profile
@@ -65,7 +65,8 @@ UPDATE_SPOTIFY_PROFILE = (
     profile_picture = %s,
     valence = %s,
     energy = %s,
-    danceability = %s
+    danceability = %s,
+    popularity = %s
     WHERE spotify_profile_token = %s;"""
 )
 

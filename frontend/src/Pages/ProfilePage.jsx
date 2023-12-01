@@ -1,10 +1,10 @@
 import React from "react";
 import { useEffect, useState, useRef } from "react";
 import { useToast, Box, Flex } from "@chakra-ui/react";
-
+import TopArtistsCard from "../Components/profile/TopArtistsCard";
+import SpotifyInfoCard from "../Components/profile/SpotifyInfoCard";
 const ProfilePage = () => {
-  const isInitialMount = useRef(true);
-
+  const [curObsession, setCurObsession] = useState();
   const [songs, setSongs] = useState();
   const [artists, setArtists] = useState();
   const [recents, setRecents] = useState();
@@ -12,6 +12,7 @@ const ProfilePage = () => {
   const [playlist, setPlaylist] = useState();
   const [profile, setProfile] = useState();
   const toast = useToast();
+  const [isInitialMount, setIsInitialMount] = useState(true);
 
   useEffect(() => {
     const getProfileInfo = async () => {
@@ -208,15 +209,65 @@ const ProfilePage = () => {
         });
       }
     };
-    console.log(playlist);
-    addToDB(songs, artists, recents, stats, profile, playlist);
+    const getCurrentObsesion = (recentSongs) => {
+      let maxCount = 0;
+      let count = 0;
+      let maxIndex = 0;
+      console.log(recentSongs);
+      recentSongs.map((song, index) => {
+        recentSongs.map((curSong, index2) => {
+          if (curSong == song) {
+            count += 1;
+          }
+        });
+        if (count > maxCount) {
+          maxCount = count;
+          maxIndex = index;
+        }
+      });
+      return recentSongs[maxIndex];
+    };
+    if (isInitialMount) {
+      setIsInitialMount(() => {
+        return false;
+      });
+    } else {
+      setCurObsession(() => {
+        return getCurrentObsesion(recents);
+      });
+      addToDB(songs, artists, recents, stats, profile, playlist);
+    }
   }, [artists]);
   return (
     <>
-      <Flex minW={"100%"} justify={"space-around"}>
-        <Box>Hiya</Box>
-        <Box>Bye</Box>
-        <Box>Another One</Box>
+      <Flex
+        minW={"100%"}
+        flexDir={{ base: "column", md: "row" }}
+        alignItems={{ base: "center" }}
+      >
+        <Box
+          flexShrink={0}
+          flexBasis={{ base: "70%", sm: "70%", md: "40%", lg: "25%" }}
+        >
+          {stats && profile && curObsession && (
+            <SpotifyInfoCard
+              stats={stats}
+              profile={profile}
+              curObsession={curObsession}
+              artistBanner={artists[4].images}
+            />
+          )}
+        </Box>
+        <Flex
+          justify={"space-around"}
+          flexBasis={"auto"}
+          flexDir={{ base: "column", md: "row" }}
+        >
+          <Box flexBasis={"40%"}>
+            {artists && <TopArtistsCard artists={artists} />}
+          </Box>
+          <Box></Box>
+        </Flex>
       </Flex>
     </>
   );

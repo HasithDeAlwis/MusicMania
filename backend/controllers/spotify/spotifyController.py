@@ -107,7 +107,7 @@ def getUserProfile():
         "spotifyUserName": profile['display_name'],
         "linkToProfile":profile['external_urls']['spotify'],
         "spotifyId":profile['id'],
-        "profilePicture": profile['images'][0]['url'],
+        "profilePicture": profile['images'][1]['url'],
         })
         return jsonify(profileInfo)
     except Exception:
@@ -547,7 +547,8 @@ def getSpotifyProfileStats(profile: list[dict], stats: dict):
     recentValence = stats[0]
     recentDanceability = stats[1]
     recentEnergy = stats[2]
-    return spotifyUserName, linkToProfile, spotifyId, profilePicture, recentValence, recentDanceability, recentEnergy
+    recentPopularity = stats[3]
+    return spotifyUserName, linkToProfile, spotifyId, profilePicture, recentValence, recentDanceability, recentEnergy, recentPopularity
 
 def getPlaylist(playlists: list[dict]):
     playlist_id = ""
@@ -578,13 +579,14 @@ def addToDB(songs, artists, recent, profile, stats, playlist):
             if exists:
                 cursor.execute(UPDATE_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
                 cursor.execute(UPDATE_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
-                cursor.execute(UPDATE_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], session['userInfo'],))
+                cursor.execute(UPDATE_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], profileVars[7], session['userInfo'],))
                 cursor.execute(UPDATE_PLAYLISTS, (playlistVars[0], playlistVars[1], playlistVars[2], playlistVars[3], session['userInfo'],))
+                cursor.execute(UPDATE_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
             else:  
                 cursor.execute(INSERT_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
                 cursor.execute(INSERT_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
                 cursor.execute(INSERT_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
-                cursor.execute(INSERT_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], session['userInfo']))
+                cursor.execute(INSERT_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], profileVars[7], session['userInfo']))
                 cursor.execute(INSERT_PLAYLISTS, (playlistVars[0], playlistVars[1], playlistVars[2], playlistVars[3], session['userInfo'],))
 
             
