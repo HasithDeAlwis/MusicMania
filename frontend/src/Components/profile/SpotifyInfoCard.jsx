@@ -4,7 +4,6 @@ import React from "react";
 const SpotifyInfoCard = (props) => {
   const stats = props.stats;
   const profile = props.profile;
-  console.log(stats);
   const artistBanner = props.artistBanner;
   const curObsession = props.curObsession;
   const valence = stats[0];
@@ -40,9 +39,8 @@ const SpotifyInfoCard = (props) => {
 
   //set all artists
   let allArtists = "";
-  console.log(curObsession);
   //get the artists of the current obsession
-  const hello = curObsession.artists.map((artist, index) => {
+  curObsession.artists.map((artist, index) => {
     if (index != 0) {
       allArtists += ", " + artist;
     } else {
@@ -95,7 +93,7 @@ const SpotifyInfoCard = (props) => {
             fontFamily={"Quicksand"}
             borderBottom={"2px solid #FFF"}
           >
-            Energy Score: {energy.toFixed(0)}
+            Energy Score: {(energy * 100).toFixed(0)}
           </Text>
           <Text
             color={"#22092C"}

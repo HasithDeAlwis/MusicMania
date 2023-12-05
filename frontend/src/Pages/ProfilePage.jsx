@@ -3,6 +3,10 @@ import { useEffect, useState, useRef } from "react";
 import { useToast, Box, Flex } from "@chakra-ui/react";
 import TopArtistsCard from "../Components/profile/TopArtistsCard";
 import SpotifyInfoCard from "../Components/profile/SpotifyInfoCard";
+import GenresCard from "../Components/profile/GenresCard";
+import PlaylistCard from "../Components/profile/PlaylistCard";
+import RecentlyPlayedCard from "../Components/profile/RecentlyPlayedCard";
+import TopSongsCard from "../Components/profile/TopSongsCard";
 const ProfilePage = () => {
   const [curObsession, setCurObsession] = useState();
   const [songs, setSongs] = useState();
@@ -11,6 +15,7 @@ const ProfilePage = () => {
   const [stats, setStats] = useState();
   const [playlist, setPlaylist] = useState();
   const [profile, setProfile] = useState();
+  const [topGenres, setTopGenres] = useState();
   const toast = useToast();
   const [isInitialMount, setIsInitialMount] = useState(true);
 
@@ -26,7 +31,6 @@ const ProfilePage = () => {
         const profileData = await profileResponse.json();
 
         const data = await profileData;
-        console.log("profile", data[0]);
         if (!profileResponse.ok) {
           throw new Error(`${profileData.error}`);
         }
@@ -74,7 +78,7 @@ const ProfilePage = () => {
     };
     const getRecentlyPlayed = async () => {
       try {
-        //Make call to get the spotify api to get the users top songs
+        //Make call to get the spotify api to get the users recent songs songs
         const recentSongsResponse = await fetch(
           "/api/spotify/recently-played",
           {
@@ -82,16 +86,22 @@ const ProfilePage = () => {
             method: "POST",
           }
         );
-
+        //save data
         let recentSongsData = await recentSongsResponse.json();
         recentSongsData = await recentSongsData;
+        //check for error
         if (!recentSongsResponse.ok) {
           throw new Error(`${recentSongsData.error}`);
         }
-
-        setRecents(recentSongsData.recents);
-        setStats(recentSongsData.analysis);
+        //set data accordingly
+        setRecents(() => {
+          return recentSongsData.recents;
+        });
+        setStats(() => {
+          return recentSongsData.analysis;
+        });
       } catch (error) {
+        //toast the error
         toast({
           title: "Error Occured!!",
           status: "error",
@@ -118,7 +128,10 @@ const ProfilePage = () => {
         }
 
         setArtists(() => {
-          return data;
+          return data["artist"];
+        });
+        setTopGenres(() => {
+          return data["top-genres"];
         });
       } catch (error) {
         toast({
@@ -213,10 +226,10 @@ const ProfilePage = () => {
       let maxCount = 0;
       let count = 0;
       let maxIndex = 0;
-      console.log(recentSongs);
       recentSongs.map((song, index) => {
+        count = 0;
         recentSongs.map((curSong, index2) => {
-          if (curSong == song) {
+          if (curSong === song) {
             count += 1;
           }
         });
@@ -238,16 +251,19 @@ const ProfilePage = () => {
       addToDB(songs, artists, recents, stats, profile, playlist);
     }
   }, [artists]);
+
   return (
     <>
       <Flex
         minW={"100%"}
         flexDir={{ base: "column", md: "row" }}
-        alignItems={{ base: "center" }}
+        minH={"100vh"}
       >
         <Box
           flexShrink={0}
           flexBasis={{ base: "70%", sm: "70%", md: "40%", lg: "25%" }}
+          position={"sticky"}
+          top="0"
         >
           {stats && profile && curObsession && (
             <SpotifyInfoCard
@@ -262,11 +278,20 @@ const ProfilePage = () => {
           justify={"space-around"}
           flexBasis={"auto"}
           flexDir={{ base: "column", md: "row" }}
+          wrap={"wrap"}
         >
           <Box flexBasis={"40%"}>
             {artists && <TopArtistsCard artists={artists} />}
           </Box>
-          <Box></Box>
+          <Box flexBasis={"40%"}>
+            {topGenres && <GenresCard genres={topGenres} />}
+          </Box>
+          <Box flexBasis={"40%"}>
+            {playlist && <RecentlyPlayedCard recents={recents} />}
+          </Box>
+          <Box flexBasis={"40%"}>
+            {songs && <TopSongsCard top_songs={songs} />}
+          </Box>
         </Flex>
       </Flex>
     </>

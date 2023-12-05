@@ -12,7 +12,6 @@ def getSpotifyAuthURL() -> str:
     #scope of this request according to spotify API
     scope = "user-read-private user-read-email playlist-read-private user-top-read user-read-recently-played"
     
-    print("Hope this works", API_INFORMATION[0])
     
     #adding necessary params
     params = {
@@ -26,7 +25,6 @@ def getSpotifyAuthURL() -> str:
     #creating the auth url with params
     auth_url = f"{AUTH_URL}?{urllib.parse.urlencode(params)}"
     #print auth url
-    print(auth_url)
     #returning the auth_url
     return auth_url
     
@@ -83,7 +81,6 @@ def refreshToken() -> jsonify:
 
 #get the spotify profile of a user
 def getUserProfile():
-    print("Session Info: ", session['userInfo'])
 
     #basic authentication
     if not ('access_token' in session):
@@ -262,6 +259,7 @@ def getTopArtist():
         results = results.json()
         #get only the top artists
         topArtists = results["items"]
+        allGenres = []
         #set the artists array to be -
         userTopArtistsInfo = []
         for artist in topArtists:
@@ -275,8 +273,13 @@ def getTopArtist():
                 "popularity":  artist['popularity'],
                 "artists_link":  artist['external_urls']['spotify'],
                 })
+                
+                
+                for genre in artist['genres']:
+                    allGenres.append(genre)
+                    
         #give back the array of dict with info
-        return jsonify(userTopArtistsInfo)
+        return userTopArtistsInfo, allGenres
     except Exception:
         return make_response(jsonify({'error': 'Successfully added song to DB!'}), 401)
 
@@ -308,7 +311,6 @@ def getPlaylists():
     try:
         while True:
             #print session info:
-            print("Session Info: ", session['access_token'])
             
             #get a page of results
             results = requests.get(playlistURL, headers=headers)
@@ -323,9 +325,7 @@ def getPlaylists():
             #get the playlist
             for item in playlistPage:
                 if (item):
-                    print(item)
                     songLink =  item['tracks']['href']
-                    # print(songFeatures)
                     if len(item['images']) > 0:
                         coverImage = item['images'][0]['url']
                     else:
@@ -373,7 +373,6 @@ def getPlaylistSongInfo(playlistID: str) -> list:
     try:
         #get the results
         results = requests.get(songsAPIEndpoint, headers=headers)
-        print('hi????')
         results = results.json()
         
         #we only want the items object
@@ -437,7 +436,7 @@ def getPlaylistSongInfo(playlistID: str) -> list:
         #return the dictionary 
         return allSongsInfo
     except:
-        return Response("API ERROR", status=401)
+        return make_response(jsonify({'error': 'API ERROR'}), 401)
 
 def analyzeSongs(songIds: str):
     

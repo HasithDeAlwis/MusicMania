@@ -37,7 +37,7 @@ const TopArtistsCard = (props) => {
           justifyItems={"start"}
           align={"flex-start"}
           minW={"100%"}
-          minH={"20em"}
+          minH={"25em"}
           marginTop={0}
           spacing={0}
           boxShadow="4px 4px 0 0 white, 8px 8px 0 0  #BE3144"
@@ -105,12 +105,13 @@ const TopArtistsCard = (props) => {
                   )}
                 </Flex>
               </VStack>
-              <Link href={artist.artists_link} justifyItems={"end"}>
+              <Link href={artist.artists_link} ml={"auto"}>
                 <Image
                   marginLeft="auto"
                   src={spotify}
                   justifySelf={"flex-end"}
                   justifyItems={"end"}
+                  minW={"50px"}
                 ></Image>
               </Link>
             </Flex>

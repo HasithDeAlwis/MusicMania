@@ -50,8 +50,8 @@ def get_recently_played():
 
 @spotify.route('/top-artists', methods=["POST"])
 def get_top_artist():
-    artistJSON = getTopArtist()
-    return artistJSON
+    artistJSON, allGenres = getTopArtist()
+    return make_response(jsonify({'artist': artistJSON, 'top-genres': allGenres}), 200)
 
 @spotify.route('/playlist', methods=["POST"])
 def get_playlist():

@@ -19,7 +19,6 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
     try:
         with connection:
             with connection.cursor() as cursor:
-                print('hi bby')
                 #find someone with the same eamil
                 cursor.execute(FIND_SAME_ACCOUNT, (email, userName,))
                 account = cursor.fetchone()
@@ -33,7 +32,6 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
     
     #check to see if passwords match
     if (password == confirmPassword):
-        print('hi bby')
         #hash password
         hashedPassword = bcrypt.hashpw(password.encode('utf8'), bcrypt.gensalt()) 
         with connection:
@@ -45,7 +43,6 @@ def registerUser(firstName: str, lastName: str, userName: str, email: str, passw
                 cursor.execute(INSERT_USER, (firstName, lastName, userName, email, hashedPassword, token,))
         #save the user token in the dbs
         session['userInfo'] = token  
-        print("session info: ", session['userInfo']) 
         return make_response(jsonify({'message': 'Succesfully Registered Account!', 'token': session['userInfo']}), 200)
     else:
         return make_response(jsonify({'error': 'Passwords do not match'}), 401)
