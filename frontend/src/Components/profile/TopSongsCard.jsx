@@ -52,7 +52,6 @@ const TopSongsCard = (props) => {
           {/*Only display table if recents have been loaded*/}
           {topSongs && (
             <>
-              {console.log(topSongs)}
               {topSongs.map((song, id) => (
                 <>
                   <Flex

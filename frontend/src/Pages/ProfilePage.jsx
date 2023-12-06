@@ -1,13 +1,14 @@
 import React from "react";
 import { useEffect, useState, useRef } from "react";
-import { useToast, Box, Flex } from "@chakra-ui/react";
+import { useToast, Box, Flex, Button, VStack } from "@chakra-ui/react";
 import TopArtistsCard from "../Components/profile/TopArtistsCard";
 import SpotifyInfoCard from "../Components/profile/SpotifyInfoCard";
 import GenresCard from "../Components/profile/GenresCard";
-import PlaylistCard from "../Components/profile/PlaylistCard";
 import RecentlyPlayedCard from "../Components/profile/RecentlyPlayedCard";
 import TopSongsCard from "../Components/profile/TopSongsCard";
-const ProfilePage = () => {
+import { useHistory } from "react-router-dom";
+
+const ProfilePage = (props) => {
   const [curObsession, setCurObsession] = useState();
   const [songs, setSongs] = useState();
   const [artists, setArtists] = useState();
@@ -18,6 +19,8 @@ const ProfilePage = () => {
   const [topGenres, setTopGenres] = useState();
   const toast = useToast();
   const [isInitialMount, setIsInitialMount] = useState(true);
+
+  const history = useHistory();
 
   useEffect(() => {
     const getProfileInfo = async () => {
@@ -181,7 +184,11 @@ const ProfilePage = () => {
       await getPlaylist();
       await getTopArtists();
     };
-    fetchData();
+
+    if (props.token) {
+    } else {
+      fetchData();
+    }
   }, []);
 
   useEffect(() => {
@@ -254,26 +261,45 @@ const ProfilePage = () => {
 
   return (
     <>
-      <Flex
-        minW={"100%"}
-        flexDir={{ base: "column", md: "row" }}
-        minH={"100vh"}
-      >
+      <Flex minW={"100%"} flexDir={{ base: "column", md: "row" }}>
         <Box
           flexShrink={0}
           flexBasis={{ base: "70%", sm: "70%", md: "40%", lg: "25%" }}
-          position={"sticky"}
-          top="0"
+          display="flex"
+          flexDir={"column"}
+          alignItems={"center"}
         >
           {stats && profile && curObsession && (
             <SpotifyInfoCard
               stats={stats}
               profile={profile}
               curObsession={curObsession}
-              artistBanner={artists[4].images}
             />
           )}
+          {profile && stats && curObsession && (
+            <Button
+              bg="#22092C"
+              textColor={"#BE3144"}
+              minW={"50%"}
+              flexBasis={"5%"}
+              _hover={{ bg: "#49095C", textColor: "#BE3144" }}
+              onClick={() =>
+                history.push({
+                  pathname: "/playlist",
+                  state: {
+                    playlist: playlist,
+                    stats: stats,
+                    profile: profile,
+                    curObsession: curObsession,
+                  },
+                })
+              }
+            >
+              View Playlist
+            </Button>
+          )}
         </Box>
+
         <Flex
           justify={"space-around"}
           flexBasis={"auto"}
