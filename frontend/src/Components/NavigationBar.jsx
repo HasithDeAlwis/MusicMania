@@ -14,24 +14,30 @@ import {
   IconButton,
   Image,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink } from 'react-router-dom'
-import { Link as ChakraLink, LinkProps } from '@chakra-ui/react'
-import logo from "../Assets/MusicManiaLogo.png"
+import { Link as ReactRouterLink } from "react-router-dom";
+import { Link as ChakraLink, LinkProps } from "@chakra-ui/react";
+import logo from "../Assets/MusicManiaLogo.png";
 
 const NavigationBar = () => {
   return (
-    <Box bg="#22092C">
-      <Flex justify={"space-between"}>
+    <Box bg="#22092C" position={{ sm: "sticky" }} top={0}>
+      <Flex justify={{ base: "center", sm: "space-between" }}>
         <Box padding={"10px"} display={"flex"}>
-          <Box pb={2} display={"flex"} justifyContent={{base: 'center', sm:'start'}} flexDir={{base: 'column', sm: 'row'}} wrap={{ base: 'nowrap', md: 'wrap' }}>
+          <Box
+            pb={2}
+            display={"flex"}
+            justifyContent={{ base: "center", sm: "start" }}
+            flexDir={{ base: "column", sm: "row" }}
+            wrap={{ base: "nowrap", md: "wrap" }}
+          >
             <Box maxW="200px" maxH="200px">
-              <ChakraLink as={ReactRouterLink} to={'/profile'}>
+              <ChakraLink as={ReactRouterLink} to={"/profile"}>
                 <Image src={logo} alt="Logo" />
               </ChakraLink>
             </Box>
             <Input
               marginTop={"30px"}
-              flexBasis={{sm: "50%"}}
+              flexBasis={{ sm: "50%" }}
               placeholder="Buddy Search"
               borderRadius="md" // Adjust the border radius
               borderColor="teal.500" // Adjust the border color
@@ -41,10 +47,14 @@ const NavigationBar = () => {
               _hover={{
                 borderColor: "teal.600", // Adjust the border color on hover
               }}
-              marginX="10px"
+              marginX={{ sm: "10px" }}
               color={"white"}
             />
-            <Button colorScheme="green" marginTop={{base: "10px", sm: "30px"}} marginLeft={{base: "10px", sm: "0"}} flexBasis={{sm: "20%"}}>
+            <Button
+              colorScheme="green"
+              marginTop={{ base: "10px", sm: "30px" }}
+              flexBasis={{ sm: "20%" }}
+            >
               Search!
             </Button>
           </Box>
@@ -53,12 +63,15 @@ const NavigationBar = () => {
           marginTop="25px"
           flexBasis={"10%"}
           marginBottom={"10px"}
-          marginLeft={{base: "5px", sm: "0"}}
+          marginLeft={{ base: "5px", sm: "0" }}
         >
           <Menu>
             {({ isOpen }) => (
               <>
-                <MenuButton as={Avatar} boxSize={{base: '2.5em', sm: '3em'}}/>
+                <MenuButton
+                  as={Avatar}
+                  boxSize={{ base: "2.5em", sm: "3em" }}
+                />
                 <MenuList>
                   <MenuItem>Profile</MenuItem>
                   <MenuItem>Playlist</MenuItem>

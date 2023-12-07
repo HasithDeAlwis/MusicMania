@@ -92,13 +92,13 @@ const GenresCard = (props) => {
   return (
     <>
       <VStack
-        align={"flex-start"}
+        alignItems={"center"}
         margin={2}
-        minH={{ base: "100%", md: "30%" }}
+        minW={{ base: "90%", sm: "90%", md: "90%", lg: "100%" }}
+        maxW={{ base: "95%", sm: "100%" }}
       >
         <Box
           bg={"#BE3144"}
-          minW={"100%"}
           textAlign={"center"}
           boxShadow="4px 4px 0 0 #22092C, 8px 8px 0 0  #F05941"
           marginY={2}
@@ -106,12 +106,14 @@ const GenresCard = (props) => {
           _hover={{
             boxShadow: "6px 6px 0 0 #22092C, 10px 10px 0 0  #F05941",
           }}
+          alignSelf={"center"}
+          minW={{ base: "70%", md: "100%" }}
         >
           <Text
             fontSize={"25px"}
             position="sticky"
             fontFamily="Quicksand"
-            margin={"10px"}
+            padding={"10px"}
             color={"#22092C"}
           >
             My Top Genres
@@ -119,14 +121,18 @@ const GenresCard = (props) => {
         </Box>
         <Box
           bg={"#22092C"}
-          minW={"100%"}
           textAlign={"center"}
           boxShadow="4px 4px 0 0 white, 8px 8px 0 0  #BE3144"
           transition={"200ms"}
           _hover={{
             boxShadow: "6px 6px 0 0 white, 10px 10px 0 0  #BE3144",
           }}
+          minW={{ base: "90%" }}
           padding={"2px"}
+          alignSelf={"center"}
+          display={"flex"}
+          minH={"25em"}
+          justifyContent={"center"}
         >
           {chartData && chartSettings && (
             <Pie data={chartData} options={chartSettings} />

@@ -7,6 +7,7 @@ const PlaylistPage = (props) => {
   const [stats, setStats] = useState();
   const [profile, setProfile] = useState();
   const [curObsession, setCurObsession] = useState();
+
   useEffect(() => {
     setAllPlaylist(() => {
       return props.location.state?.playlist;
@@ -23,8 +24,19 @@ const PlaylistPage = (props) => {
   });
 
   return (
-    <Box minW={"100%"} display={"flex"} justifyContent={"center"}>
-      <Box>
+    <Box
+      minW={"100%"}
+      display={"flex"}
+      flexDir={{ base: "column", md: "row" }}
+      justifyContent={"center"}
+    >
+      <Box
+        flexShrink={0}
+        flexBasis={{ base: "70%", sm: "70%", md: "40%", lg: "25%" }}
+        alignSelf={{ md: "flex-start" }}
+        position={{ md: "sticky" }}
+        top={"13%"}
+      >
         {stats && profile && curObsession && (
           <SpotifyInfoCard
             stats={stats}
@@ -39,11 +51,14 @@ const PlaylistPage = (props) => {
         display={"flex"}
         flexWrap={"wrap"}
         justifyContent={"center"}
+        alignSelf={"center"}
+        marginBottom={{ base: 2, sm: 0 }}
       >
         <Box
           bg={"#BE3144"}
-          minW={"90%"}
+          flexBasis={"90%"}
           textAlign={"center"}
+          flexShrink={0}
           boxShadow="4px 4px 0 0 #22092C, 8px 8px 0 0  #F05941"
           marginY={2}
           transition={"200ms"}
@@ -54,7 +69,8 @@ const PlaylistPage = (props) => {
           <Text
             fontSize={"25px"}
             position="sticky"
-            fontFamily="Quicksand"
+            fontFamily="Poppins"
+            fontWeight={"bold"}
             margin={"10px"}
             color={"#22092C"}
           >
@@ -62,18 +78,26 @@ const PlaylistPage = (props) => {
           </Text>
         </Box>
         {allPlaylist ? (
-          <Flex flexWrap={"wrap"} w={"90%"} justifyContent={"space-around"}>
+          <Flex
+            flexWrap={"wrap"}
+            flexShrink={0}
+            basis={"90%"}
+            justifyContent={"space-around"}
+          >
             {allPlaylist.map((playlist, id) => (
-              <>
-                <Box
-                  flexBasis={{ base: "100%", sm: "75%", md: "25%", lg: "19%" }}
-                  flexShrink={0}
-                  marginX={"1%"}
-                  marginY={"1%"}
-                >
-                  <PlaylistCard key={id} playlist={playlist} />
-                </Box>
-              </>
+              <Box
+                flexBasis={{ base: "100%", sm: "75%", md: "33%", lg: "33%" }}
+                flexShrink={0}
+                marginY={"1%"}
+              >
+                <PlaylistCard
+                  key={id}
+                  playlist={playlist}
+                  stats={stats}
+                  profile={profile}
+                  curObsession={curObsession}
+                />
+              </Box>
             ))}
           </Flex>
         ) : (

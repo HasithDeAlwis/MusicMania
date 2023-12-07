@@ -24,7 +24,6 @@ def getSpotifyAuthURL() -> str:
     
     #creating the auth url with params
     auth_url = f"{AUTH_URL}?{urllib.parse.urlencode(params)}"
-    #print auth url
     #returning the auth_url
     return auth_url
     
@@ -370,73 +369,73 @@ def getPlaylistSongInfo(playlistID: str) -> list:
     headers = {
         'Authorization': f"Bearer {session['access_token']}",
     }
-    try:
-        #get the results
-        results = requests.get(songsAPIEndpoint, headers=headers)
-        results = results.json()
-        
-        #we only want the items object
-        tracksInfo = results['items']
-        
-        #arrays that will hold all the info
-        allArtists = []
-        allSongs = []
-        
-        #store the songIds in a string for the track analysis
-        songIds = ""
-        
-        #save the artists for a song in a single string (this is because of SQL not allowing multi-deminsonal arrays of different sizes)
-        artistsForSong = ""
-        
-        #count is 0
-        count = 0
-        
-        #loop through every track
-        for item in tracksInfo:
-            #take the song title
-            allSongs.append(item['track']['name'])
-            #take the name of the artist
-            artists =  item['track']['album']['artists']
-            
-            #loop through the artist
-            for index, artist in enumerate(artists):
-                #check to see if the index is 0 so we won't add an @
-                if (index == 0):
-                    artistsForSong = artist['name']
-                else:
-                    #add the artist list
-                    artistsForSong += "@" + artist['name'] #the @ is for future logic when distingushing between different arists
-            
-            #add this to the artists to the array 
-            allArtists.append(artistsForSong)
-            
-            #make this empty again for the next song
-            artistsForSong = ""
-            
-            #for the first 100 songs of the playlist check add their song id
-            if count < 100:
-                if count != 0:
-                    #get the ID
-                    songIds += ',' + item['track']['id']
-                else:
-                    songIds = item['track']['id']
-                count += 1
-        #get the track features of a song
-        trackFeatures = analyzeSongs(songIds)
-        
-        #put all the song info into a dict 
-        allSongsInfo = {
-            "artists": allArtists, 
-            "titles": allSongs, 
-            "valence": trackFeatures[0],
-            "danceability": trackFeatures[1],
-            "energy": trackFeatures[2]
-        }
-        
-        #return the dictionary 
-        return allSongsInfo
-    except:
-        return make_response(jsonify({'error': 'API ERROR'}), 401)
+   
+    #get the results
+    results = requests.get(songsAPIEndpoint, headers=headers)
+    results = results.json()
+    totalTracks = results['total']
+    #we only want the items object
+    tracksInfo = results['items']
+    
+    
+    #arrays that will hold all the info
+    allArtists = []
+    allSongs = []
+    
+    #store the songIds in a string for the track analysis
+    songIds = ""
+    
+    #save the artists for a song in a single string (this is because of SQL not allowing multi-deminsonal arrays of different sizes)
+    artistForSong = []
+    #info for all songs
+    songsInfo = []
+    #count is 0
+    count = 0
+    
+    #loop through every track
+    for index, item in enumerate(tracksInfo):
+        #take the song title
+        id = item['track']['id']
+        title = item['track']['name']
+        link = item['track']['external_urls']['spotify']
+        #take the name of the artist
+        artists =  item['track']['album']['artists']
+        image = item['track']['album']['images'][0]['url']
+        artistForSong = []
+
+        #loop through the artist
+        for artist in artists:
+            artistForSong.append(artist['name'])
+        songsInfo.append(
+            {
+                "artist": artistForSong,
+                "link": link,
+                "title": title,
+                "id": id,
+                "image": image
+            }
+        )
+
+        #for the first 100 songs of the playlist check add their song id
+        if count < 100:
+            if count != 0:
+                #get the ID
+                songIds += ',' + id
+            else:
+                songIds = id
+            count += 1
+    #get the track features of a song
+    trackFeatures = analyzeSongs(songIds)
+    
+    #put all the song info into a dict 
+    allSongsInfo = {
+        "song-data": songsInfo,
+        "stats": trackFeatures,
+        "total-tracks": totalTracks
+    }
+    
+    #return the dictionary 
+    return allSongsInfo
 
 def analyzeSongs(songIds: str):
     

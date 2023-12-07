@@ -6,13 +6,15 @@ const TopArtistsCard = (props) => {
   return (
     <>
       <VStack
-        align={"flex-start"}
-        margin={2}
+        alignItems={"center"}
         minH={{ base: "100%", md: "30%" }}
+        minW={{ base: "80%", sm: "80%", md: "70%", lg: "100%" }}
+        maxW={{ base: "90%", sm: "90%", md: "80%" }}
+        marginLeft={{ base: "4", sm: "9", md: "10", lg: "0" }}
       >
         <Box
           bg={"#BE3144"}
-          minW={"100%"}
+          minW={{ base: "70%", md: "100%" }}
           textAlign={"center"}
           boxShadow="4px 4px 0 0 #22092C, 8px 8px 0 0  #F05941"
           marginY={2}
@@ -36,10 +38,11 @@ const TopArtistsCard = (props) => {
           maxH={"200px"}
           justifyItems={"start"}
           align={"flex-start"}
-          minW={"100%"}
           minH={"25em"}
           marginTop={0}
           spacing={0}
+          minW={{ base: "100%", sm: "80%", md: "100%" }}
+          maxW={{ sm: "90%" }}
           boxShadow="4px 4px 0 0 white, 8px 8px 0 0  #BE3144"
         >
           {artists.map((artist, index) => (
@@ -56,7 +59,7 @@ const TopArtistsCard = (props) => {
             >
               <Box
                 flexBasis={"10%"}
-                minW={"100px"}
+                minW={"80px"}
                 justifySelf={"start"}
                 display={"block"}
               >
@@ -79,7 +82,38 @@ const TopArtistsCard = (props) => {
                 >
                   {artist.name}
                 </Text>
-                <Flex alignSelf={"start"}>
+                <Flex
+                  alignSelf={"start"}
+                  display={{ base: "flex", md: "none" }}
+                >
+                  <Text
+                    color={"#F05941"}
+                    fontSize="18px"
+                    fontFamily={"Poppins"}
+                    marginLeft={2}
+                  >
+                    Genres:
+                  </Text>
+                  {artist.genres.map(
+                    (genre, index) =>
+                      index < 2 && (
+                        <Text
+                          color="#F05941"
+                          fontSize={"14px"}
+                          fontFamily="Poppins"
+                          marginLeft={1}
+                          marginTop={1}
+                          border="2px solid #333"
+                        >
+                          {genre}
+                        </Text>
+                      )
+                  )}
+                </Flex>
+                <Flex
+                  alignSelf={"start"}
+                  display={{ base: "none", md: "flex" }}
+                >
                   <Text
                     color={"#F05941"}
                     fontSize="18px"

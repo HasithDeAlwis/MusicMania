@@ -12,14 +12,15 @@ const RecentlyPlayedCard = (props) => {
   return (
     <>
       <VStack
-        align={"flex-start"}
-        margin={2}
         minH={{ base: "100%", md: "30%" }}
-        minW={"100%"}
+        minW={{ base: "90%", sm: "80%", md: "100%", lg: "100%" }}
+        maxW={{ base: "90%", sm: "90%" }}
+        marginLeft={{ base: 4, sm: "0" }}
+        alignItems={"center"}
+        marginBottom={2}
       >
         <Box
           bg={"#BE3144"}
-          minW={"100%"}
           textAlign={"center"}
           boxShadow="4px 4px 0 0 #22092C, 8px 8px 0 0  #F05941"
           marginY={2}
@@ -27,10 +28,11 @@ const RecentlyPlayedCard = (props) => {
           _hover={{
             boxShadow: "6px 6px 0 0 #22092C, 10px 10px 0 0  #F05941",
           }}
+          minW={{ base: "70%", md: "100%" }}
+          alignSelf={"center"}
         >
           <Text
             fontSize={"25px"}
-            position="sticky"
             fontFamily="Quicksand"
             margin={"10px"}
             color={"#22092C"}
@@ -43,11 +45,13 @@ const RecentlyPlayedCard = (props) => {
           maxH={"200px"}
           justifyItems={"start"}
           align={"flex-start"}
-          minW={"100%"}
           minH={"25em"}
           marginTop={0}
           spacing={0}
           boxShadow="4px 4px 0 0 white, 8px 8px 0 0  #BE3144"
+          minW={{ base: "100%", sm: "80%", md: "100%" }}
+          maxW={{ sm: "90%" }}
+          alignSelf={"center"}
         >
           {/*Only display table if recents have been loaded*/}
           {recents && (

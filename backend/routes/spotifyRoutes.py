@@ -58,7 +58,7 @@ def get_playlist():
     playlistJSON = getPlaylists()
     return playlistJSON
 
-@spotify.route('/get-playlist-info/<id>')
+@spotify.route('/get-playlist-info/<id>', methods = ["POST"])
 def get_playlist_info(id):
     return getPlaylistSongInfo(id)
 

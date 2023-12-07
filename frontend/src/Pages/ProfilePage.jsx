@@ -268,6 +268,9 @@ const ProfilePage = (props) => {
           display="flex"
           flexDir={"column"}
           alignItems={"center"}
+          alignSelf={{ md: "flex-start" }}
+          position={{ md: "sticky" }}
+          top={"13%"}
         >
           {stats && profile && curObsession && (
             <SpotifyInfoCard
@@ -285,7 +288,7 @@ const ProfilePage = (props) => {
               _hover={{ bg: "#49095C", textColor: "#BE3144" }}
               onClick={() =>
                 history.push({
-                  pathname: "/playlist",
+                  pathname: "/user-playlist",
                   state: {
                     playlist: playlist,
                     stats: stats,
@@ -301,21 +304,22 @@ const ProfilePage = (props) => {
         </Box>
 
         <Flex
-          justify={"space-around"}
-          flexBasis={"auto"}
+          justify={{ base: "center", md: "space-around" }}
           flexDir={{ base: "column", md: "row" }}
           wrap={"wrap"}
         >
-          <Box flexBasis={"40%"}>
+          <Box flexBasis={"40%"} flexShrink={1}>
             {artists && <TopArtistsCard artists={artists} />}
           </Box>
-          <Box flexBasis={"40%"}>
+          <Box flexBasis={"40%"} flexShrink={1}>
             {topGenres && <GenresCard genres={topGenres} />}
           </Box>
-          <Box flexBasis={"40%"}>
-            {playlist && <RecentlyPlayedCard recents={recents} />}
+          <Box flexBasis={"40%"} flexShrink={1}>
+            {playlist && (
+              <RecentlyPlayedCard recents={recents} display={"flex"} />
+            )}
           </Box>
-          <Box flexBasis={"40%"}>
+          <Box flexBasis={"40%"} flexShrink={1}>
             {songs && <TopSongsCard top_songs={songs} />}
           </Box>
         </Flex>

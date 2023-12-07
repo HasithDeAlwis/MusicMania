@@ -3,11 +3,11 @@ import { Route, Switch } from "react-router-dom";
 import ProfilePage from "./Pages/ProfilePage";
 import SignUpLoginPage from "./Pages/SignUpLoginPage";
 import PlaylistPage from "./Pages/PlaylistPage";
-import logo from "./Assets/Music.png"
+import SinglePlaylistPage from "./Pages/SinglePlaylistPage";
+import logo from "./Assets/Music.png";
 import NavigationBar from "./Components/NavigationBar";
 import EmailConfimrationPage from "./Pages/EmailConfimrationPage";
 function App() {
-
   return (
     <>
       <NavigationBar />
@@ -15,10 +15,10 @@ function App() {
         <Switch>
           <Route path="/authenticate" component={SignUpLoginPage} exact />
           <Route path="/profile" component={ProfilePage} />
-          <Route path="/playlist" component={PlaylistPage} />
+          <Route path="/user-playlist" component={PlaylistPage} />
           <Route path="/confirmation" component={EmailConfimrationPage} />
+          <Route path="/playlist" component={SinglePlaylistPage} />
         </Switch>
-        
       </div>
     </>
   );

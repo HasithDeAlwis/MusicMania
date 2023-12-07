@@ -60,7 +60,8 @@ const SpotifyInfoCard = (props) => {
         <VStack bg={"#BE3144"} padding={2} textAlign={"center"}>
           <Text
             color={"#22092C"}
-            fontFamily={"Quicksand"}
+            fontFamily={"Poppins"}
+            fontWeight={"900"}
             borderBottom={"2px solid #FFF"}
           >
             {profile.spotifyUserName}
@@ -75,7 +76,8 @@ const SpotifyInfoCard = (props) => {
 
           <Text
             color={"#22092C"}
-            fontFamily={"Quicksand"}
+            fontFamily={"Poppins"}
+            fontWeight={"600"}
             borderBottom={"2px solid #FFF"}
           >
             Happiness Score: {(valence * 100).toFixed(0)}
@@ -83,21 +85,24 @@ const SpotifyInfoCard = (props) => {
 
           <Text
             color={"#22092C"}
-            fontFamily={"Quicksand"}
+            fontFamily={"Poppins"}
+            fontWeight={"600"}
             borderBottom={"2px solid #FFF"}
           >
             Basic Score: {popularity.toFixed(0)}
           </Text>
           <Text
             color={"#22092C"}
-            fontFamily={"Quicksand"}
+            fontFamily={"Poppins"}
+            fontWeight={"600"}
             borderBottom={"2px solid #FFF"}
           >
             Energy Score: {(energy * 100).toFixed(0)}
           </Text>
           <Text
             color={"#22092C"}
-            fontFamily={"Quicksand"}
+            fontFamily={"Poppins"}
+            fontWeight={"600"}
             borderBottom={"2px solid #FFF"}
           >
             Danceability Score: {danceability.toFixed(0)}
@@ -105,7 +110,8 @@ const SpotifyInfoCard = (props) => {
 
           <Text
             color={"#22092C"}
-            fontFamily={"Quicksand"}
+            fontFamily={"Poppins"}
+            fontWeight={"600"}
             borderBottom={"2px solid #FFF"}
           >
             Current Obsession: {curObsession.song_name} by {allArtists}
