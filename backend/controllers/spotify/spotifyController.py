@@ -486,6 +486,48 @@ def analyzeSongs(songIds: str):
     
     except Exception: 
         return Response("API ERROR", status=401)
+
+#controller function to call the API to add a playlist
+def addPlaylist(playlistID: str):
+    #basic authentication
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    #check if token expired
+    if session['expires_at'] < datetime.now().timestamp():
+        return redirect('/refresh-token')
+    #check header
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}",
+    }
+    try: 
+        addPlaylistEndpoint = API_BASE_URL + '/playlist/' + playlistID + '/followers'
+        #send request to follow a playlist, this doesn't return anything
+        requests.put(addPlaylistEndpoint, headers=headers)
+    except Exception:
+        return make_response(jsonify({'error': 'Could not follow playlist'}), 401)
+
+    
+def addUser(userID: str):
+    #basic authentication
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    #check if token expired
+    if session['expires_at'] < datetime.now().timestamp():
+        return redirect('/refresh-token')
+    #check header
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}",
+    }
+    try:
+        addUserEndpoint = API_BASE_URL + f'/following?ids={userID}'
+        requests.put(addUserEndpoint, headers=headers)
+    except Exception:
+        return make_response(jsonify({'error': 'Could not follow user'}), 401)
+
+
+#return an array of all the top artists 
 def getTopArtistsStrings(artists: list[dict]) -> (str, str, str, str, str):
     name = ""
     artists_id = ""
@@ -591,7 +633,7 @@ def addToDB(songs, artists, recent, profile, stats, playlist):
 
         
         connection.commit()
-    return make_response(jsonify({'error': 'Successfully added song to DB!'}), 200)
+    return make_response(jsonify({'error': 'Could not update databse'}), 401)
  
     
         

@@ -1,6 +1,6 @@
 #this file will contain all the API routes that will make calls to the spotify API
 from flask import Blueprint, redirect, session, request, jsonify, Response, url_for, make_response
-from ..controllers.spotify.spotifyController import getSpotifyAuthURL, getToken, refreshToken, getPlaylists, getTopSongs, getRecentlyPlayed, getTopArtist, getPlaylistSongInfo, getUserProfile, addToDB
+from ..controllers.spotify.spotifyController import getSpotifyAuthURL, getToken, refreshToken, getPlaylists, getTopSongs, getRecentlyPlayed, getTopArtist, getPlaylistSongInfo, getUserProfile, addToDB, addPlaylist
 from datetime import datetime
 import requests 
 
@@ -61,6 +61,11 @@ def get_playlist():
 @spotify.route('/get-playlist-info/<id>', methods = ["POST"])
 def get_playlist_info(id):
     return getPlaylistSongInfo(id)
+
+@spotify.route('/add-playlist/<id>', methods = ["PUT"])
+def add_playlist(id):
+    return addPlaylist(id)
+
 
 
 @spotify.route('/update-user-info', methods = ["POST"])

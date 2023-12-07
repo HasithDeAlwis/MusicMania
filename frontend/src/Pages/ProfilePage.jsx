@@ -236,7 +236,7 @@ const ProfilePage = (props) => {
       recentSongs.map((song, index) => {
         count = 0;
         recentSongs.map((curSong, index2) => {
-          if (curSong === song) {
+          if (song.song_name === curSong.song_name) {
             count += 1;
           }
         });
@@ -247,14 +247,17 @@ const ProfilePage = (props) => {
       });
       return recentSongs[maxIndex];
     };
+    //chcek to see if we're in our first mount, if we are then don't run this useEffect()
     if (isInitialMount) {
       setIsInitialMount(() => {
         return false;
       });
     } else {
+      //get the current obsession
       setCurObsession(() => {
         return getCurrentObsesion(recents);
       });
+      //update the database
       addToDB(songs, artists, recents, stats, profile, playlist);
     }
   }, [artists]);
@@ -280,26 +283,28 @@ const ProfilePage = (props) => {
             />
           )}
           {profile && stats && curObsession && (
-            <Button
-              bg="#22092C"
-              textColor={"#BE3144"}
-              minW={"50%"}
-              flexBasis={"5%"}
-              _hover={{ bg: "#49095C", textColor: "#BE3144" }}
-              onClick={() =>
-                history.push({
-                  pathname: "/user-playlist",
-                  state: {
-                    playlist: playlist,
-                    stats: stats,
-                    profile: profile,
-                    curObsession: curObsession,
-                  },
-                })
-              }
-            >
-              View Playlist
-            </Button>
+            <Box>
+              <Button
+                bg="#22092C"
+                textColor={"#BE3144"}
+                minW={"50%"}
+                flexBasis={"5%"}
+                _hover={{ bg: "#49095C", textColor: "#BE3144" }}
+                onClick={() =>
+                  history.push({
+                    pathname: "/user-playlist",
+                    state: {
+                      playlist: playlist,
+                      stats: stats,
+                      profile: profile,
+                      curObsession: curObsession,
+                    },
+                  })
+                }
+              >
+                View Playlist
+              </Button>
+            </Box>
           )}
         </Box>
 
