@@ -112,7 +112,7 @@ const GenresCard = (props) => {
           <Text
             fontSize={"25px"}
             position="sticky"
-            fontFamily="Quicksand"
+            fontFamily="Poppins"
             padding={"10px"}
             color={"#22092C"}
           >

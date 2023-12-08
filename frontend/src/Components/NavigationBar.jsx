@@ -14,11 +14,24 @@ import {
   IconButton,
   Image,
 } from "@chakra-ui/react";
+import { useHistory } from "react-router-dom";
 import { Link as ReactRouterLink } from "react-router-dom";
 import { Link as ChakraLink, LinkProps } from "@chakra-ui/react";
 import logo from "../Assets/MusicManiaLogo.png";
 
 const NavigationBar = () => {
+  const [isDropdownOpen, setDropdownOpen] = useState(true);
+  const [searchTerm, setSearchTerm] = useState();
+  const history = useHistory();
+  const parseSearch = () => {
+    //replace all the ' ' in the search to a '+'
+  };
+  //handle the users search request
+  const handleSearch = () => {
+    const searchQuerry = searchTerm.replaceAll(" ", "+");
+    history.push(`/search?search-term=${searchQuerry}`);
+  };
+
   return (
     <Box bg="#22092C" position={{ sm: "sticky" }} top={0}>
       <Flex justify={{ base: "center", sm: "space-between" }}>
@@ -35,9 +48,19 @@ const NavigationBar = () => {
                 <Image src={logo} alt="Logo" />
               </ChakraLink>
             </Box>
-            <Input
-              marginTop={"30px"}
+            <Button
+              marginTop={{ base: "10px", sm: "30px" }}
               flexBasis={{ sm: "50%" }}
+              order={2}
+              colorScheme="green"
+              justifySelf={"start"}
+              marginLeft={{ base: 4, sm: 0 }}
+              onClick={handleSearch}
+            >
+              Search!
+            </Button>
+
+            <Input
               placeholder="Buddy Search"
               borderRadius="md" // Adjust the border radius
               borderColor="teal.500" // Adjust the border color
@@ -47,16 +70,12 @@ const NavigationBar = () => {
               _hover={{
                 borderColor: "teal.600", // Adjust the border color on hover
               }}
-              marginX={{ sm: "10px" }}
               color={"white"}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchTerm}
+              marginTop={{ sm: "30px" }}
+              marginX={2}
             />
-            <Button
-              colorScheme="green"
-              marginTop={{ base: "10px", sm: "30px" }}
-              flexBasis={{ sm: "20%" }}
-            >
-              Search!
-            </Button>
           </Box>
         </Box>
         <Box

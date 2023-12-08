@@ -4,6 +4,7 @@ import ProfilePage from "./Pages/ProfilePage";
 import SignUpLoginPage from "./Pages/SignUpLoginPage";
 import PlaylistPage from "./Pages/PlaylistPage";
 import SinglePlaylistPage from "./Pages/SinglePlaylistPage";
+import SearchResultsPage from "./Pages/SearchResultsPage";
 import logo from "./Assets/Music.png";
 import NavigationBar from "./Components/NavigationBar";
 import EmailConfimrationPage from "./Pages/EmailConfimrationPage";
@@ -18,6 +19,7 @@ function App() {
           <Route path="/user-playlist" component={PlaylistPage} />
           <Route path="/confirmation" component={EmailConfimrationPage} />
           <Route path="/playlist" component={SinglePlaylistPage} />
+          <Route path="/search" component={SearchResultsPage} />
         </Switch>
       </div>
     </>

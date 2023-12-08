@@ -13,15 +13,57 @@ import {
 import PlaylistColumn from "../Components/playlist/PlaylistColumn";
 import SpotifyInfoCard from "../Components/profile/SpotifyInfoCard";
 const SinglePlaylistPage = (props) => {
-  const [playlist, setPlaylist] = useState();
-  const [isInitialMount, setIsInitialMount] = useState(true);
-  const [stats, setStats] = useState();
+  const [playlist, setPlaylist] = useState(); //playlist song
+  const [isInitialMount, setIsInitialMount] = useState(true); //checks first useEffect
+  const [stats, setStats] = useState(); //stats of playlist
+
+  //profile info
   const [profile, setProfile] = useState();
   const [curObsession, setCurObsession] = useState();
   const [playlistSongs, setPlaylistSongs] = useState();
   const [playlsitStats, setPlaylistsStats] = useState();
-  const [tracks, setTracks] = useState();
-  const toast = useToast();
+
+  const [tracks, setTracks] = useState(); //num of tracks
+  const toast = useToast(); //toast
+
+  const handleAddPlaylist = async () => {
+    try {
+      //Make cal to the spotify api to add the playlist
+      const addPlaylistResponse = await fetch(
+        `/api/spotify/add-playlist/${playlist.id}`,
+        {
+          headers: new Headers({ "content-type": "application/json" }),
+          method: "PUT",
+        }
+      );
+      //turn response to json
+      const addPlaylistData = await addPlaylistResponse.json();
+      //check for error
+      if (!addPlaylistResponse.ok) {
+        //throw error
+        throw new Error(`${addPlaylistData.error}`);
+      }
+      toast({
+        status: "success",
+        description: "Followed Playlist",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+    } catch (error) {
+      //toast the erorr
+      toast({
+        title: "Error Occured!!",
+        status: "error",
+        description: error.message,
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+    }
+  };
+
+  //get the info from state variable passed in from history
   useEffect(() => {
     setPlaylist(() => {
       return props.location.state?.playlist;
@@ -49,11 +91,12 @@ const SinglePlaylistPage = (props) => {
             method: "POST",
           }
         );
-
+        //get the data
         const playlistData = await playlistResponse.json();
-
+        //turn promise into object
         const data = await playlistData;
-        console.log(data);
+
+        //update all variables accordingly
         setPlaylistSongs(() => {
           return data["song-data"];
         });
@@ -63,11 +106,16 @@ const SinglePlaylistPage = (props) => {
         setTracks(() => {
           return data["total-tracks"];
         });
+
+        //check for error
         if (!playlistResponse.ok) {
           throw new Error(`${playlistData.error}`);
         }
+
+        //return data
         return data;
       } catch (error) {
+        //toast the erorr
         toast({
           title: "Error Occured!!",
           status: "error",
@@ -78,6 +126,7 @@ const SinglePlaylistPage = (props) => {
         });
       }
     };
+    //if we are not in the initial mount get the playlistInfo
     if (!isInitialMount) {
       getPlaylistInfo();
     } else {
@@ -111,7 +160,7 @@ const SinglePlaylistPage = (props) => {
                   alt={`Playlist cover for ${playlist.playlist_name}`}
                 ></Image>
               </Box>
-              <Box>
+              <Box minW={"15%"}>
                 <Text
                   fontSize={"22px"}
                   fontWeight={999}
@@ -165,6 +214,7 @@ const SinglePlaylistPage = (props) => {
                     _hover={{
                       boxShadow: "6px 6px 0 0 #22092C, 10px 10px 0 0  white",
                     }}
+                    onClick={handleAddPlaylist}
                   >
                     Add Playlist
                   </Button>
@@ -195,7 +245,7 @@ const SinglePlaylistPage = (props) => {
               <Text
                 fontSize={"25px"}
                 position="sticky"
-                fontFamily="Quicksand"
+                fontFamily="Poppins"
                 margin={"10px"}
                 color={"#22092C"}
               >

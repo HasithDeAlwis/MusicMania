@@ -3,8 +3,10 @@ import urllib.parse
 from flask import request, jsonify, redirect, session, url_for, abort, Response, make_response
 import requests
 from datetime import datetime
-from ...database import connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_SPOTIFY_PROFILE, UPDATE_SPOTIFY_PROFILE
+from ...database import connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_SPOTIFY_PROFILE, UPDATE_SPOTIFY_PROFILE, FIND_INSTANCE_OF_IN_RECENT_SONGS, FIND_INSTANCE_OF_IN_TOP_SONGS, FIND_INSTANCE_OF_IN_TOP_ARTISTS, FIND_PROFILE
 import json
+from psycopg2 import extras
+
 
 
 #returns the url that will be called to start the OAuth Code Flow
@@ -53,6 +55,8 @@ def getToken():
         session['access_token'] = token_info['access_token'] 
         session['refresh_token'] = token_info['refresh_token']
         session['expires_at'] = datetime.now().timestamp() + token_info['expires_in']
+        #tell flask we modified the session so it updates right away
+        session.modified = True
 
 
 #when the token expires refresh the token
@@ -370,72 +374,89 @@ def getPlaylistSongInfo(playlistID: str) -> list:
         'Authorization': f"Bearer {session['access_token']}",
     }
    
-    #get the results
-    results = requests.get(songsAPIEndpoint, headers=headers)
-    results = results.json()
-    totalTracks = results['total']
-    #we only want the items object
-    tracksInfo = results['items']
+    try:
+        #get the results
+        results = requests.get(songsAPIEndpoint, headers=headers)
+        results = results.json() 
     
-    
-    #arrays that will hold all the info
-    allArtists = []
-    allSongs = []
-    
-    #store the songIds in a string for the track analysis
-    songIds = ""
-    
-    #save the artists for a song in a single string (this is because of SQL not allowing multi-deminsonal arrays of different sizes)
-    artistForSong = []
-    #info for all songs
-    songsInfo = []
-    #count is 0
-    count = 0
-    
-    #loop through every track
-    for index, item in enumerate(tracksInfo):
-        #take the song title
-        id = item['track']['id']
-        title = item['track']['name']
-        link = item['track']['external_urls']['spotify']
-        #take the name of the artist
-        artists =  item['track']['album']['artists']
-        image = item['track']['album']['images'][0]['url']
+        
+        
+        totalTracks = results['total']
+        #we only want the items object
+        tracksInfo = results['items']
+        
+        
+        #arrays that will hold all the info
+        allArtists = []
+        allSongs = []
+        
+        #store the songIds in a string for the track analysis
+        songIds = ""
+        
+        #save the artists for a song in a single string (this is because of SQL not allowing multi-deminsonal arrays of different sizes)
         artistForSong = []
+        #info for all songs
+        songsInfo = []
+        #count is 0
+        count = 0
+        
+        
+        #loop through every track
+        for index, item in enumerate(tracksInfo):
+            #take the song title
+            title = item['track']['name']
+            #take the name of the artist
+            artists =  item['track']['album']['artists']
+            artistForSong = []
+            #if someone has custom songs in their playlsit the code will crash so we are avoiding it by adding a try catch around it
+            try:
+                #ids, links, and image are only found for songs form the spotify app
+                id = item['track']['id']
+                link = item['track']['external_urls']['spotify']
+                image = item['track']['album']['images'][0]['url']
 
-        #loop through the artist
-        for artist in artists:
-            artistForSong.append(artist['name'])
-        songsInfo.append(
-            {
-                "artist": artistForSong,
-                "link": link,
-                "title": title,
-                "id": id,
-                "image": image
-            }
-        )
+            except:
+                #custom song so just make the link for it empty
+                link = ""
+                image=""
+                id =""
 
-        #for the first 100 songs of the playlist check add their song id
-        if count < 100:
-            if count != 0:
-                #get the ID
-                songIds += ',' + id
-            else:
-                songIds = id
-            count += 1
-    #get the track features of a song
-    trackFeatures = analyzeSongs(songIds)
-    
-    #put all the song info into a dict 
-    allSongsInfo = {
-        "song-data": songsInfo,
-        "stats": trackFeatures,
-        "total-tracks": totalTracks
-    }
-    
+            #loop through the artist
+            for artist in artists:
+                artistForSong.append(artist['name'])
+            songsInfo.append(
+                {
+                    "artist": artistForSong,
+                    "link": link,
+                    "title": title,
+                    "id": id,
+                    "image": image
+                }
+            )
+
+            #for the first 100 songs of the playlist check add their song id
+            if count < 100:
+                #if the id is empty then we don't want spotify analyzing it because that will cause an error
+                if id != "":  
+                    if count != 0:
+                        #get the ID
+                        songIds += ',' + id
+                    else:
+                        songIds = id
+                    count += 1
+        #get the track features of a song
+        trackFeatures = analyzeSongs(songIds)
+        
+        #put all the song info into a dict 
+        allSongsInfo = {
+            "song-data": songsInfo,
+            "stats": trackFeatures,
+            "total-tracks": totalTracks
+        }
+        return allSongsInfo
+    except Exception:
+        return make_response(jsonify({'error': 'Unable to access Playlist Info'}), 401)
     #return the dictionary 
-    return allSongsInfo
 
 def analyzeSongs(songIds: str):
     
@@ -504,6 +525,7 @@ def addPlaylist(playlistID: str):
         addPlaylistEndpoint = API_BASE_URL + '/playlist/' + playlistID + '/followers'
         #send request to follow a playlist, this doesn't return anything
         requests.put(addPlaylistEndpoint, headers=headers)
+        return make_response(jsonify({'message': 'Successfully Followed Playlist'}), 200)
     except Exception:
         return make_response(jsonify({'error': 'Could not follow playlist'}), 401)
 
@@ -523,8 +545,9 @@ def addUser(userID: str):
     try:
         addUserEndpoint = API_BASE_URL + f'/following?ids={userID}'
         requests.put(addUserEndpoint, headers=headers)
+        return make_response(jsonify({'message': 'Successfully Followed User'}), 200)
     except Exception:
-        return make_response(jsonify({'error': 'Could not follow user'}), 401)
+        return make_response(jsonify({'error': 'Could not Follow User'}), 401)
 
 
 #return an array of all the top artists 
@@ -604,37 +627,101 @@ def getPlaylist(playlists: list[dict]):
     return playlist_id, playlist_name, playlist_link, playlist_cover
 
 def addToDB(songs, artists, recent, profile, stats, playlist):
-    with connection:
-        with connection.cursor() as cursor:
-            
-            existsQuerry = CHECK_IF_ALREADY_ADDED.format('top_artists', 'top_artists_token')
-            cursor.execute(existsQuerry, (session['userInfo'],))
-            exists = cursor.fetchall()
+    try:
+        with connection:
+            with connection.cursor() as cursor:
+                
+                existsQuerry = CHECK_IF_ALREADY_ADDED.format('spotify_profile', 'spotify_profile_token')
+                cursor.execute(existsQuerry, (session['userInfo'],))
+                exists = cursor.fetchall()
 
-            artistsVars = getTopArtistsStrings(artists)
-            songVars = getTopSongsStrings(songs)
-            recentSongsVars = getRecentSongs(recent)
-            profileVars = getSpotifyProfileStats(profile, stats)
-            playlistVars = getPlaylist(playlist)
-            if exists:
-                cursor.execute(UPDATE_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
-                cursor.execute(UPDATE_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
-                cursor.execute(UPDATE_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], profileVars[7], session['userInfo'],))
-                cursor.execute(UPDATE_PLAYLISTS, (playlistVars[0], playlistVars[1], playlistVars[2], playlistVars[3], session['userInfo'],))
-                cursor.execute(UPDATE_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
-            else:  
-                cursor.execute(INSERT_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
-                cursor.execute(INSERT_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
-                cursor.execute(INSERT_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
-                cursor.execute(INSERT_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], profileVars[7], session['userInfo']))
-                cursor.execute(INSERT_PLAYLISTS, (playlistVars[0], playlistVars[1], playlistVars[2], playlistVars[3], session['userInfo'],))
-
-            
-
-        
+                artistsVars = getTopArtistsStrings(artists)
+                songVars = getTopSongsStrings(songs)
+                recentSongsVars = getRecentSongs(recent)
+                profileVars = getSpotifyProfileStats(profile, stats)
+                playlistVars = getPlaylist(playlist)
+                if exists:
+                    cursor.execute(UPDATE_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
+                    cursor.execute(UPDATE_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
+                    cursor.execute(UPDATE_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], profileVars[7], session['userInfo'],))
+                    cursor.execute(UPDATE_PLAYLISTS, (playlistVars[0], playlistVars[1], playlistVars[2], playlistVars[3], session['userInfo'],))
+                    cursor.execute(UPDATE_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
+                else:  
+                    cursor.execute(INSERT_TOP_ARTISTS, (artistsVars[0], artistsVars[1], artistsVars[2], artistsVars[3], artistsVars[4], artistsVars[5], session['userInfo'],))
+                    cursor.execute(INSERT_TOP_SONGS, (songVars[0], songVars[1], songVars[2], songVars[3], songVars[4], songVars[5], songVars[6], session['userInfo'],))
+                    cursor.execute(INSERT_RECENT_SONGS, (recentSongsVars[0], recentSongsVars[1], recentSongsVars[2], recentSongsVars[3], recentSongsVars[4], session['userInfo'],))
+                    cursor.execute(INSERT_SPOTIFY_PROFILE, (profileVars[0], profileVars[1], profileVars[2], profileVars[3], profileVars[4], profileVars[5], profileVars[6], profileVars[7], session['userInfo']))
+                    cursor.execute(INSERT_PLAYLISTS, (playlistVars[0], playlistVars[1], playlistVars[2], playlistVars[3], session['userInfo'],))
         connection.commit()
-    return make_response(jsonify({'error': 'Could not update databse'}), 401)
+        return make_response(jsonify({'message': 'Updated Database!'}), 200)
+
+    except Exception:
+        return make_response(jsonify({'error': 'Could not update databse'}), 401)
  
+def getSearchResults(searchTerms: str) -> json:
+    query = ""
+    resultTokens = []
+    allTokens = []
+    try:
+        
+        with connection:
+            with connection.cursor(cursor_factory=extras.DictCursor) as cursor:
+                for search in searchTerms:
+                    #Make the query have '%' around it to make it a wildcard
+                    query = "%" + search.strip().title() + "%"
+                    print(query)
+                    cursor.execute(FIND_INSTANCE_OF_IN_TOP_SONGS, (query, query,))
+                    for index, row in enumerate(cursor.fetchall()):
+                        if row['top_songs_token'] != session['userInfo']:
+                            if row['top_songs_token'] in allTokens:
+                                resultTokens[index][1] += 1
+                            else:
+                                resultTokens.append([row['top_songs_token'], 1])
+                                allTokens.append(row['top_songs_token'])
+                            
+                    cursor.execute(FIND_INSTANCE_OF_IN_TOP_ARTISTS, (query,))
+                    for index, row in enumerate(cursor.fetchall()):
+                        if row['top_artists_token'] != session['userInfo']:
+                            if row['top_artists_token'] in allTokens:
+                                resultTokens[index][1] += 1
+                            else:
+                                resultTokens.append([row['top_artists_token'], 1])
+                                allTokens.append(row['top_artists_token'])
+
+                    cursor.execute(FIND_INSTANCE_OF_IN_RECENT_SONGS, (query, query,))
+                    for index, row in enumerate(cursor.fetchall()):
+                        if row['recent_songs_token'] != session['userInfo']:
+                            if row['recent_songs_token'] in allTokens:
+                                resultTokens[index][1] += 1
+                            else:
+                                resultTokens.append([row['recent_songs_token'], 1])
+                                allTokens.append(row['recent_songs_token'])
+                                
+                sortedResults = sorted(resultTokens, key=lambda x: x[1])
+                displayResultsList = []
+                for result in sortedResults:
+                    cursor.execute(FIND_PROFILE, (result[0],))
+                    user = cursor.fetchone()
+                    compatability = analyzeCompatibility(len(searchTerms), result)
+                    displayResultsList.append({
+                        'username': user['display_name'],
+                        'id': user['spotify_id'],
+                        'profile-picture': user['profile_picture'],
+                        'score': compatability
+                    })
+                    
+            connection.commit()
+        print(displayResultsList)
+        return make_response(jsonify({'message': 'Search Completed'}), 200)
+
+    except Exception:
+        return make_response(jsonify({'error': 'Search Incomplete'}), 401)
+    
+def analyzeCompatibility(terms: int, result: list[str, int]) -> int:
+    return int(result[1]/terms)
+
+
+  
     
         
         

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Image, Text, Box, VStack } from "@chakra-ui/react";
 import { useHistory } from "react-router-dom";
+import NoImageFound from "../profile/assets/NoImageFound.jpeg";
 const PlaylistCard = (props) => {
   const [playlist, setPlaylist] = useState();
   const history = useHistory();
@@ -60,17 +61,27 @@ const PlaylistCard = (props) => {
                 boxShadow: "6px 6px 0 0 #22092C, 10px 10px 0 0  #F05941",
               }}
             >
-              <Image
-                src={playlist.cover_image}
-                objectFit={"cover"}
-                width={"100%"}
-                height={"100%"}
-                alt={`playlist-cover-image for ${playlist.playlist_name}`}
-              ></Image>
+              {playlist.cover_image != "" ? (
+                <Image
+                  src={playlist.cover_image}
+                  objectFit={"cover"}
+                  width={"100%"}
+                  height={"100%"}
+                  alt={`playlist-cover-image for ${playlist.playlist_name}`}
+                ></Image>
+              ) : (
+                <Image
+                  src={NoImageFound}
+                  objectFit={"cover"}
+                  width={"100%"}
+                  height={"100%"}
+                  alt={`playlist-cover-image for ${playlist.playlist_name}`}
+                ></Image>
+              )}
             </Box>
             <Box marginTop={{ base: "1.5%", md: "4%" }}>
               <Text
-                fontFamily={"Quicksand"}
+                fontFamily={"Poppins"}
                 color={"#22092C"}
                 fontSize={{ base: "20px", md: "17px" }}
               >

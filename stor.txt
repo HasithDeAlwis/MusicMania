@@ -1,0 +1,30 @@
+for search in searchTerms:
+                #Make the query have '%' around it to make it a wildcard
+                query = "%" + search + "%"
+                print(query)
+                cursor.execute(FIND_INSTANCE_OF_IN_TOP_SONGS, (query, query,))
+                for index, row in enumerate(cursor.fetchall()):
+                    print(row)
+                    if row['top_songs_token'] in allTokens:
+                        resultTokens[index][1] += 1
+                    else:
+                        resultTokens.append([row['top_songs_token'], 0])
+                        allTokens.append([row['top_songs_token']])
+                        
+                cursor.execute(FIND_INSTANCE_OF_IN_TOP_ARTISTS, (query,))
+                for index, row in enumerate(cursor.fetchall()):
+                    print(row)
+                    if row['top_artists_token'] in allTokens:
+                        resultTokens[index][1] += 1
+                    else:
+                        resultTokens.append([row['top_artists_token'], 0])
+                        allTokens.append([row['top_songs_token']])
+
+                cursor.execute(FIND_INSTANCE_OF_IN_RECENT_SONGS, (query, query,))
+                for index, row in enumerate(cursor.fetchall()):
+
+                    if row['recent_songs_token'] in allTokens:
+                        resultTokens[index][1] += 1
+                    else:
+                        resultTokens.append([row['recent_songs_token'], 0])
+                        allTokens.append([row['top_songs_token']])

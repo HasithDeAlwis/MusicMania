@@ -33,7 +33,7 @@ const RecentlyPlayedCard = (props) => {
         >
           <Text
             fontSize={"25px"}
-            fontFamily="Quicksand"
+            fontFamily="Poppins"
             margin={"10px"}
             color={"#22092C"}
           >

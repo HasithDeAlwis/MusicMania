@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Flex, Box, Text, Image, VStack, Link } from "@chakra-ui/react";
 import spotify from "../profile/assets/spotify.svg";
+import NoImageFound from "../profile/assets/NoImageFound.jpeg";
 const PlaylistColumn = (props) => {
   const [song, setSong] = useState();
 
@@ -28,13 +29,23 @@ const PlaylistColumn = (props) => {
             width={"50px"} // Set the size of the square box
             height={"50px"}
           >
-            <Image
-              src={song.image}
-              objectFit={"cover"}
-              width={"100%"}
-              height={"100%"}
-              alt={`Song cover for ${song.title}`}
-            ></Image>
+            {song.image != "" ? (
+              <Image
+                src={song.image}
+                objectFit={"cover"}
+                width={"100%"}
+                height={"100%"}
+                alt={`Song cover for ${song.title}`}
+              ></Image>
+            ) : (
+              <Image
+                src={NoImageFound}
+                objectFit={"cover"}
+                width={"100%"}
+                height={"100%"}
+                alt={`Song cover for ${song.title}`}
+              ></Image>
+            )}
           </Box>
           <VStack>
             <Box alignSelf={"start"}>

@@ -123,7 +123,13 @@ UPDATE_PLAYLISTS = (
 )
 FIND_TOKEN = (
     """SELECT * FROM users
-    WHERE token = (%s)
+    WHERE token = %s
+    LIMIT 1"""
+)
+
+FIND_PROFILE = (
+    """SELECT * FROM spotify_profile
+    WHERE spotify_profile_token = %s
     LIMIT 1"""
 )
 
@@ -138,5 +144,26 @@ FIND_SAME_ACCOUNT = (
     """SELECT * from users
     WHERE email = %s or user_name = %s
     LIMIT 1;"""
+)
+
+FIND_INSTANCE_OF_IN_TOP_SONGS = (
+    """SELECT * FROM top_songs
+    WHERE 
+    song_name LIKE %s
+    OR artists_name LIKE %s"""
+)
+
+FIND_INSTANCE_OF_IN_RECENT_SONGS = (
+    """SELECT * FROM recent_songs
+    WHERE 
+    song_name LIKE %s
+    OR artists_name LIKE %s"""
+)
+
+FIND_INSTANCE_OF_IN_TOP_ARTISTS= (
+    """
+    SELECT * FROM top_artists
+    WHERE 
+    artist_name LIKE %s"""
 )
 

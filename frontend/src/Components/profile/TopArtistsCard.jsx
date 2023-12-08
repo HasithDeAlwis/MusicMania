@@ -26,7 +26,7 @@ const TopArtistsCard = (props) => {
           <Text
             fontSize={"25px"}
             position="sticky"
-            fontFamily="Quicksand"
+            fontFamily="Poppins"
             margin={"10px"}
             color={"#22092C"}
           >
