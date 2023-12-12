@@ -3,7 +3,7 @@ import urllib.parse
 from flask import request, jsonify, redirect, session, url_for, abort, Response, make_response
 import requests
 from datetime import datetime
-from ...database import GET_FAV_SONG_AND_ARTISTS_PREVIEW, connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_SPOTIFY_PROFILE, UPDATE_SPOTIFY_PROFILE, FIND_INSTANCE_OF_IN_RECENT_SONGS, FIND_INSTANCE_OF_IN_TOP_SONGS, FIND_INSTANCE_OF_IN_TOP_ARTISTS, FIND_PROFILE, GET_ALL_INFO
+from ...database import GET_FAV_SONG_AND_ARTISTS_PREVIEW, connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_SPOTIFY_PROFILE, UPDATE_SPOTIFY_PROFILE, FIND_INSTANCE_OF_IN_RECENT_SONGS, FIND_INSTANCE_OF_IN_TOP_SONGS, FIND_INSTANCE_OF_IN_TOP_ARTISTS, FIND_PROFILE, GET_ALL_INFO, GET_USER_PFP
 import json
 from psycopg2 import extras
 
@@ -80,6 +80,14 @@ def refreshToken() -> jsonify:
     #use json to convert token data
     new_token_info = response.json()
     return new_token_info
+
+#get the users profile picture
+def getUserPfp():
+    with connection:
+        with connection.cursor() as cursor:
+            cursor.execute(GET_USER_PFP, (session['userInfo'],))
+            profilePic = cursor.fetchone()[0]
+            return make_response(jsonify({'profile-picture': profilePic}))
 
 
 #get the spotify profile of a user

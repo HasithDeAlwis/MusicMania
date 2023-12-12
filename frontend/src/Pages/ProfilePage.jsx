@@ -185,8 +185,8 @@ const ProfilePage = (props) => {
       await getTopSongs();
       await getProfileInfo();
       await getRecentlyPlayed();
-      await getPlaylist();
       await getTopArtists();
+      await getPlaylist();
     };
 
     const accessDataBase = async (token) => {
@@ -326,7 +326,7 @@ const ProfilePage = (props) => {
         addToDB(songs, artists, recents, stats, profile, playlist);
       }
     }
-  }, [artists]);
+  }, [playlist]);
 
   return (
     <>
@@ -378,6 +378,7 @@ const ProfilePage = (props) => {
 
         <Flex
           justify={{ base: "center", md: "space-around" }}
+          alignItems={{ base: "start", md: "" }}
           flexDir={{ base: "column", md: "row" }}
           wrap={"wrap"}
         >

@@ -1,6 +1,6 @@
 #this file will contain all the API routes that will make calls to the spotify API
 from flask import Blueprint, redirect, session, request, jsonify, Response, url_for, make_response
-from ..controllers.spotify.spotifyController import getSpotifyAuthURL, getToken, refreshToken, getPlaylists, getTopSongs, getRecentlyPlayed, getTopArtist, getPlaylistSongInfo, getUserProfile, addToDB, addPlaylist, addUser, getSearchResults, getInfoForProfile
+from ..controllers.spotify.spotifyController import getSpotifyAuthURL, getToken, refreshToken, getPlaylists, getTopSongs, getRecentlyPlayed, getTopArtist, getPlaylistSongInfo, getUserProfile, addToDB, addPlaylist, addUser, getSearchResults, getInfoForProfile, getUserPfp
 from datetime import datetime
 import requests 
 
@@ -96,7 +96,14 @@ def getUserSpotifyInfo():
     if request.method == "GET":
         token = request.args.get('token')
         return getInfoForProfile(token)
-    
+
+@spotify.route('/get-profile-picture', methods=["GET"])
+def getProfilePicture():
+    if request.method == "GET":
+        if 'userInfo' in session:
+            return getUserPfp()
+        else:
+            return make_response(jsonify({'error': 'User is not logged in yet'}), 401)
 
 
         

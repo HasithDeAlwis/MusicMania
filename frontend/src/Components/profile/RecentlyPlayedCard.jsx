@@ -49,7 +49,7 @@ const RecentlyPlayedCard = (props) => {
           marginTop={0}
           spacing={0}
           boxShadow="4px 4px 0 0 white, 8px 8px 0 0  #BE3144"
-          minW={{ base: "100%", sm: "80%", md: "100%" }}
+          minW={{ base: "80%", sm: "80%", md: "100%" }}
           maxW={{ sm: "90%" }}
           alignSelf={"center"}
         >

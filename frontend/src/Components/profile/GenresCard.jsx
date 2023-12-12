@@ -93,7 +93,9 @@ const GenresCard = (props) => {
     <>
       <VStack
         alignItems={"center"}
-        margin={2}
+        marginLeft={{ base: 7, md: 2 }}
+        marginBottom={2}
+        marginTop={{ base: 3, md: 0 }}
         minW={{ base: "90%", sm: "90%", md: "90%", lg: "100%" }}
         maxW={{ base: "95%", sm: "100%" }}
       >

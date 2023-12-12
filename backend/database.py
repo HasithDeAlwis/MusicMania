@@ -212,3 +212,10 @@ GET_FAV_SONG_AND_ARTISTS_PREVIEW = (
     WHERE top_songs.top_songs_token = %s
     """
 )
+
+GET_USER_PFP = (
+    """SELECT profile_picture
+    FROM spotify_profile
+    WHERE spotify_profile_token = %s
+    """
+)
