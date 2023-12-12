@@ -56,82 +56,81 @@ const TopSongsCard = (props) => {
           {topSongs && (
             <>
               {topSongs.map((song, id) => (
-                <>
-                  <Flex
-                    key={id}
-                    justify={"flex-start"}
-                    bg={"#22092C"}
-                    transition="transform 0.3s ease-in-out"
-                    _hover={{
-                      transform: "scale(1.03)",
-                    }}
-                    minW={"100%"}
-                    borderX="3px solid #F05941"
-                    borderY="1.5px solid #F05941"
+                <Flex
+                  key={id}
+                  justify={"flex-start"}
+                  bg={"#22092C"}
+                  transition="transform 0.3s ease-in-out"
+                  _hover={{
+                    transform: "scale(1.03)",
+                  }}
+                  minW={"100%"}
+                  borderX="3px solid #F05941"
+                  borderY="1.5px solid #F05941"
+                >
+                  <Box
+                    flexBasis={"10%"}
+                    minW={"80px"}
+                    justifySelf={"start"}
+                    display={"block"}
                   >
-                    <Box
-                      flexBasis={"10%"}
-                      minW={"80px"}
-                      justifySelf={"start"}
-                      display={"block"}
+                    <Image src={song.cover_image} objectFit={"cover"}></Image>
+                  </Box>
+                  <VStack
+                    align={"flex-start"}
+                    wordwrap="break-word"
+                    textOverflow="ellipsis"
+                    maxWidth="100%"
+                    justifySelf={"start"}
+                  >
+                    <Text
+                      fontSize={"20px"}
+                      margin={1}
+                      fontFamily={"Poppins"}
+                      color={"#F05941"}
+                      overflowWrap={"break-word"}
+                      alignItems={"flex-start"}
                     >
-                      <Image src={song.cover_image} objectFit={"cover"}></Image>
-                    </Box>
-                    <VStack
-                      align={"flex-start"}
-                      wordwrap="break-word"
-                      textOverflow="ellipsis"
-                      maxWidth="100%"
-                      justifySelf={"start"}
-                    >
+                      {song.name}
+                    </Text>
+                    <Flex alignSelf={"start"}>
                       <Text
-                        fontSize={"20px"}
-                        margin={1}
-                        fontFamily={"Poppins"}
                         color={"#F05941"}
-                        overflowWrap={"break-word"}
-                        alignItems={"flex-start"}
+                        fontSize="18px"
+                        fontFamily={"Poppins"}
+                        marginLeft={2}
                       >
-                        {song.name}
+                        Artist:
                       </Text>
-                      <Flex alignSelf={"start"}>
-                        <Text
-                          color={"#F05941"}
-                          fontSize="18px"
-                          fontFamily={"Poppins"}
-                          marginLeft={2}
-                        >
-                          Artist:
-                        </Text>
-                        {song.artists.map(
-                          (artist, index) =>
-                            index < 3 && (
-                              <Text
-                                color="#F05941"
-                                fontSize={"14px"}
-                                fontFamily="Poppins"
-                                marginLeft={1}
-                                marginTop={1}
-                                border="2px solid #333"
-                              >
-                                {artist}
-                              </Text>
-                            )
-                        )}
-                      </Flex>
-                    </VStack>
-                    <Link href={song.song_link} ml={"auto"}>
-                      <Image
-                        marginLeft="auto"
-                        src={spotify}
-                        justifySelf={"flex-end"}
-                        justifyItems={"end"}
-                        minW={"45px"}
-                        maxW={"45px"}
-                      ></Image>
-                    </Link>
-                  </Flex>
-                </>
+                      {song.artists.map(
+                        (artist, index) =>
+                          index < 3 && (
+                            <Text
+                              color="#F05941"
+                              fontSize={"14px"}
+                              fontFamily="Poppins"
+                              marginLeft={1}
+                              marginTop={1}
+                              border="2px solid #333"
+                              key={index}
+                            >
+                              {artist}
+                            </Text>
+                          )
+                      )}
+                    </Flex>
+                  </VStack>
+                  <Link href={song.song_link} ml={"auto"}>
+                    <Image
+                      marginLeft="auto"
+                      src={spotify}
+                      justifySelf={"flex-end"}
+                      justifyItems={"end"}
+                      minW={"45px"}
+                      maxW={"45px"}
+                    ></Image>
+                  </Link>
+                </Flex>
               ))}
             </>
           )}

@@ -33,7 +33,7 @@ const NavigationBar = () => {
   };
 
   return (
-    <Box bg="#22092C" position={{ sm: "sticky" }} top={0}>
+    <Box bg="#22092C" position={{ sm: "sticky" }} top={0} zIndex={2}>
       <Flex justify={{ base: "center", sm: "space-between" }}>
         <Box padding={"10px"} display={"flex"}>
           <Box

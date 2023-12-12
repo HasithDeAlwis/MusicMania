@@ -7,6 +7,7 @@ import GenresCard from "../Components/profile/GenresCard";
 import RecentlyPlayedCard from "../Components/profile/RecentlyPlayedCard";
 import TopSongsCard from "../Components/profile/TopSongsCard";
 import { useHistory } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const ProfilePage = (props) => {
   const [curObsession, setCurObsession] = useState();
@@ -19,8 +20,11 @@ const ProfilePage = (props) => {
   const [topGenres, setTopGenres] = useState();
   const toast = useToast();
   const [isInitialMount, setIsInitialMount] = useState(true);
-
+  const location = useLocation();
   const history = useHistory();
+
+  const queryParameters = new URLSearchParams(location.search);
+  const token = queryParameters.get("user");
 
   useEffect(() => {
     const getProfileInfo = async () => {
@@ -185,7 +189,67 @@ const ProfilePage = (props) => {
       await getTopArtists();
     };
 
-    if (props.token) {
+    const accessDataBase = async (token) => {
+      try {
+        //Make call to get the spotify api to get the users top songs
+        const allInfoResponse = await fetch(
+          `/api/spotify/get-user-spotify-info?token=${token}`,
+          {
+            headers: new Headers({ "content-type": "application/json" }),
+            method: "GET",
+          }
+        );
+
+        const allInfoData = await allInfoResponse.json();
+        const data = await allInfoData;
+
+        if (!allInfoResponse.ok) {
+          throw new Error(`${allInfoData.error}`);
+        }
+        //set the songs
+        setSongs(() => {
+          return data["top-songs"];
+        });
+        //set hte playlists
+        setPlaylist(() => {
+          return data["playlist"];
+        });
+        //set the recents
+        setRecents(() => {
+          return data["recent-songs"];
+        });
+        //set the stats
+        setStats(() => {
+          return data["stats"];
+        });
+        //set the profile
+        setProfile(() => {
+          return data["profile"][0];
+        });
+
+        setTopGenres(() => {
+          return data["top-genres"];
+        });
+        setArtists(() => {
+          return data["top-artists"];
+        });
+      } catch (error) {
+        toast({
+          title: "Error Occured!!",
+          status: "error",
+          description: error.message,
+          duration: 5000,
+          isClosable: true,
+          position: "bottom",
+        });
+      }
+    };
+    const fetchOtherUserData = async (token) => {
+      await accessDataBase(token);
+    };
+
+    if (token) {
+      fetchOtherUserData(token);
     } else {
       fetchData();
     }
@@ -257,8 +321,10 @@ const ProfilePage = (props) => {
       setCurObsession(() => {
         return getCurrentObsesion(recents);
       });
-      //update the database
-      addToDB(songs, artists, recents, stats, profile, playlist);
+      if (!token) {
+        //update the database
+        addToDB(songs, artists, recents, stats, profile, playlist);
+      }
     }
   }, [artists]);
 
@@ -276,11 +342,13 @@ const ProfilePage = (props) => {
           top={"13%"}
         >
           {stats && profile && curObsession && (
-            <SpotifyInfoCard
-              stats={stats}
-              profile={profile}
-              curObsession={curObsession}
-            />
+            <>
+              <SpotifyInfoCard
+                stats={stats}
+                profile={profile}
+                curObsession={curObsession}
+              />
+            </>
           )}
           {profile && stats && curObsession && (
             <Box>
@@ -320,7 +388,7 @@ const ProfilePage = (props) => {
             {topGenres && <GenresCard genres={topGenres} />}
           </Box>
           <Box flexBasis={"40%"} flexShrink={1}>
-            {playlist && (
+            {recents && (
               <RecentlyPlayedCard recents={recents} display={"flex"} />
             )}
           </Box>

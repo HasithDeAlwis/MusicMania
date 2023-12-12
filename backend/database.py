@@ -149,21 +149,66 @@ FIND_SAME_ACCOUNT = (
 FIND_INSTANCE_OF_IN_TOP_SONGS = (
     """SELECT * FROM top_songs
     WHERE 
-    song_name LIKE %s
-    OR artists_name LIKE %s"""
+    UPPER(song_name) LIKE UPPER(%s)
+    OR UPPER (artists_name) LIKE UPPER(%s)"""
 )
 
 FIND_INSTANCE_OF_IN_RECENT_SONGS = (
     """SELECT * FROM recent_songs
     WHERE 
-    song_name LIKE %s
-    OR artists_name LIKE %s"""
+    UPPER(song_name) LIKE UPPER(%s)
+    OR UPPER(artists_name) LIKE UPPER(%s)"""
 )
 
 FIND_INSTANCE_OF_IN_TOP_ARTISTS= (
     """
     SELECT * FROM top_artists
     WHERE 
-    artist_name LIKE %s"""
+    UPPER(artist_name) LIKE UPPER(%s)"""
 )
 
+GET_ALL_INFO = (
+    """SELECT 
+    top_songs.song_name AS top_songs_name, 
+    top_songs.song_link AS top_songs_link, 
+    top_songs.artists_name AS top_songs_artist,
+    top_songs.cover_images As top_songs_image,
+    top_artists.artist_name AS top_artists_name,
+    top_artists.cover_image AS top_artists_image,
+    top_artists.genres AS top_artists_genres,
+    top_artists.artist_link AS top_artists_link,
+    recent_songs.song_name AS recent_songs_name,
+    recent_songs.song_link AS recent_songs_link,
+    recent_songs.artists_name AS recent_songs_artists,
+    recent_songs.cover_images AS recent_songs_images,
+    spotify_profile.display_name AS spotify_name,
+    spotify_profile.spotify_id AS spotify_id,
+    spotify_profile.profile_picture AS spotify_profile_picture,
+    spotify_profile.link_to_profile AS spotify_profile_link,
+    spotify_profile.valence AS spotify_valence,
+    spotify_profile.danceability AS spotify_danceability,
+    spotify_profile.energy AS spotify_energy,
+    spotify_profile.popularity AS spotify_popularity,
+    playlists.playlist_id AS playlist_id,
+    playlists.playlist_name as playlist_name,
+    playlists.playlist_cover as playlist_cover
+FROM users
+JOIN top_artists ON users.token = top_artists.top_artists_token
+JOIN top_songs ON top_artists.top_artists_token = top_songs.top_songs_token
+JOIN recent_songs ON top_songs.top_songs_token = recent_songs.recent_songs_token
+JOIN spotify_profile ON recent_songs.recent_songs_token = spotify_profile.spotify_profile_token
+JOIN playlists ON spotify_profile.spotify_profile_token = playlists.playlist_token
+WHERE users.token = %s"""
+)
+
+GET_FAV_SONG_AND_ARTISTS_PREVIEW = (
+    """
+    SELECT 
+    top_songs.song_name AS top_song_name,
+    top_songs.artists_name AS top_song_artist,
+    top_artists.artist_name AS top_artists_name
+    FROM top_artists 
+    JOIN top_songs ON top_artists.top_artists_token = top_songs.top_songs_token
+    WHERE top_songs.top_songs_token = %s
+    """
+)

@@ -66,6 +66,7 @@ const SinglePlaylistPage = (props) => {
   //get the info from state variable passed in from history
   useEffect(() => {
     setPlaylist(() => {
+      console.log(props.location.state?.playlist);
       return props.location.state?.playlist;
     });
     setStats(() => {
@@ -77,7 +78,6 @@ const SinglePlaylistPage = (props) => {
     setCurObsession(() => {
       return props.location.state?.curObsession;
     });
-    console.log(playlist);
   }, []);
 
   useEffect(() => {

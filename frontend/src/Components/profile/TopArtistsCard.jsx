@@ -56,10 +56,11 @@ const TopArtistsCard = (props) => {
               minW={"100%"}
               borderX="3px solid #F05941"
               borderY="1.5px solid #F05941"
+              key={index}
             >
               <Box
                 flexBasis={"10%"}
-                minW={"80px"}
+                minW={"90px"}
                 justifySelf={"start"}
                 display={"block"}
               >

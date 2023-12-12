@@ -90,6 +90,7 @@ const PlaylistPage = (props) => {
                 flexShrink={0}
                 marginY={"1%"}
               >
+                {console.log(playlist)}
                 <PlaylistCard
                   key={id}
                   playlist={playlist}

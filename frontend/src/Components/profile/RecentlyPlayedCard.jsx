@@ -111,6 +111,7 @@ const RecentlyPlayedCard = (props) => {
                           (artist, index) =>
                             index < 3 && (
                               <Text
+                                key={index}
                                 color="#F05941"
                                 fontSize={"14px"}
                                 fontFamily="Poppins"

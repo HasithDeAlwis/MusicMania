@@ -3,7 +3,7 @@ import urllib.parse
 from flask import request, jsonify, redirect, session, url_for, abort, Response, make_response
 import requests
 from datetime import datetime
-from ...database import connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_SPOTIFY_PROFILE, UPDATE_SPOTIFY_PROFILE, FIND_INSTANCE_OF_IN_RECENT_SONGS, FIND_INSTANCE_OF_IN_TOP_SONGS, FIND_INSTANCE_OF_IN_TOP_ARTISTS, FIND_PROFILE
+from ...database import GET_FAV_SONG_AND_ARTISTS_PREVIEW, connection, INSERT_RECENT_SONGS, INSERT_TOP_SONGS, INSERT_TOP_ARTISTS, UPDATE_TOP_ARTISTS, UPDATE_PLAYLISTS, INSERT_PLAYLISTS, CHECK_IF_ALREADY_ADDED, UPDATE_RECENT_SONGS, UPDATE_TOP_SONGS, INSERT_SPOTIFY_PROFILE, UPDATE_SPOTIFY_PROFILE, FIND_INSTANCE_OF_IN_RECENT_SONGS, FIND_INSTANCE_OF_IN_TOP_SONGS, FIND_INSTANCE_OF_IN_TOP_ARTISTS, FIND_PROFILE, GET_ALL_INFO
 import json
 from psycopg2 import extras
 
@@ -660,65 +660,185 @@ def addToDB(songs, artists, recent, profile, stats, playlist):
  
 def getSearchResults(searchTerms: str) -> json:
     query = ""
+    resultsDict = {}
     resultTokens = []
     allTokens = []
-    try:
-        
-        with connection:
-            with connection.cursor(cursor_factory=extras.DictCursor) as cursor:
-                for search in searchTerms:
-                    #Make the query have '%' around it to make it a wildcard
-                    query = "%" + search.strip().title() + "%"
-                    print(query)
-                    cursor.execute(FIND_INSTANCE_OF_IN_TOP_SONGS, (query, query,))
-                    for index, row in enumerate(cursor.fetchall()):
-                        if row['top_songs_token'] != session['userInfo']:
-                            if row['top_songs_token'] in allTokens:
-                                resultTokens[index][1] += 1
-                            else:
-                                resultTokens.append([row['top_songs_token'], 1])
-                                allTokens.append(row['top_songs_token'])
-                            
-                    cursor.execute(FIND_INSTANCE_OF_IN_TOP_ARTISTS, (query,))
-                    for index, row in enumerate(cursor.fetchall()):
-                        if row['top_artists_token'] != session['userInfo']:
-                            if row['top_artists_token'] in allTokens:
-                                resultTokens[index][1] += 1
-                            else:
-                                resultTokens.append([row['top_artists_token'], 1])
-                                allTokens.append(row['top_artists_token'])
+    favouriteArtists = {}
+    favouriteSong = {}
+  
+    
+    with connection:
+        with connection.cursor(cursor_factory=extras.DictCursor) as cursor:
+            for search in searchTerms:
+                #Make the query have '%' around it to make it a wildcard
+                query = "%" + search.strip().title() + "%"
+                print(query)
+                cursor.execute(FIND_INSTANCE_OF_IN_TOP_SONGS, (query, query,))
+                for index, row in enumerate(cursor.fetchall()):
+                    if row['top_songs_token'] != session['userInfo']:
+                        artistName = row['artists_name'].split("**")[1]
+                        artistName = artistName.split(",")
+                        favouriteSong[row['top_songs_token']] = [row['song_name'].split("**")[1], artistName]
+                        resultsDict[row['top_songs_token']] =  1 + resultsDict[row['top_songs_token']] if row['top_songs_token'] in resultsDict else 1
+                        
+                cursor.execute(FIND_INSTANCE_OF_IN_TOP_ARTISTS, (query,))
+                for index, row in enumerate(cursor.fetchall()):
+                    if row['top_artists_token'] != session['userInfo']:
+                        resultsDict[row['top_artists_token']] =  1 + resultsDict[row['top_artists_token']] if row['top_artists_token'] in resultsDict else 1
 
-                    cursor.execute(FIND_INSTANCE_OF_IN_RECENT_SONGS, (query, query,))
-                    for index, row in enumerate(cursor.fetchall()):
-                        if row['recent_songs_token'] != session['userInfo']:
-                            if row['recent_songs_token'] in allTokens:
-                                resultTokens[index][1] += 1
-                            else:
-                                resultTokens.append([row['recent_songs_token'], 1])
-                                allTokens.append(row['recent_songs_token'])
-                                
-                sortedResults = sorted(resultTokens, key=lambda x: x[1])
-                displayResultsList = []
-                for result in sortedResults:
-                    cursor.execute(FIND_PROFILE, (result[0],))
-                    user = cursor.fetchone()
-                    compatability = analyzeCompatibility(len(searchTerms), result)
-                    displayResultsList.append({
-                        'username': user['display_name'],
-                        'id': user['spotify_id'],
-                        'profile-picture': user['profile_picture'],
-                        'score': compatability
-                    })
-                    
-            connection.commit()
-        print(displayResultsList)
-        return make_response(jsonify({'message': 'Search Completed'}), 200)
 
-    except Exception:
-        return make_response(jsonify({'error': 'Search Incomplete'}), 401)
+                cursor.execute(FIND_INSTANCE_OF_IN_RECENT_SONGS, (query, query,))
+                for index, row in enumerate(cursor.fetchall()):
+                    if row['recent_songs_token'] != session['userInfo']:
+                        resultsDict[row['recent_songs_token']] =  1 + resultsDict[row['recent_songs_token']] if row['recent_songs_token'] in resultsDict else 1
+
+            for token, count in resultsDict.items():
+                cursor.execute(GET_FAV_SONG_AND_ARTISTS_PREVIEW, (token,))
+                results = cursor.fetchone()
+                favouriteArtists[token] = results['top_artists_name'].split("**")[1:4]
+                favouriteSong[token] = [results['top_song_name'].split("**")[1], results['top_song_artist'].split("**")[1].split(",")]
+                resultTokens.append([token, count])
+                
+            sortedResults = sorted(resultTokens, key=lambda x: x[1], reverse=True)
+            displayResultsList = []
+            for result in sortedResults:
+                cursor.execute(FIND_PROFILE, (result[0],))
+                user = cursor.fetchone()
+                compatability = analyzeCompatibility(len(searchTerms), result)
+                displayResultsList.append({
+                    'username': user['display_name'],
+                    'id': user['spotify_id'],
+                    'profile-picture': user['profile_picture'],
+                    'score': compatability,
+                    'favourite-artists': favouriteArtists[result[0]],
+                    'favourite-songs': favouriteSong[result[0]],
+                    'link': user['link_to_profile'],
+                    'token': result[0]
+                })
+        connection.commit()
+    return displayResultsList
+
     
 def analyzeCompatibility(terms: int, result: list[str, int]) -> int:
-    return int(result[1]/terms)
+    return int((result[1]/(terms*3))*100)
+
+def getInfoForProfile(token: str):
+    topSongsInfo = []
+    topArtistsInfo = []
+    recentSongsInfo = []
+    artistArray = []
+    playlistInfo = []
+    genresArray = []
+    allGenres = []
+    profileInfo = []
+    spotifyStats = []
+    allInfo = {}
+    with connection:
+        with connection.cursor(cursor_factory=extras.DictCursor) as cursor:
+            #using SQL join to get all the info relating to a certain user by their token
+            cursor.execute(GET_ALL_INFO, (token,))
+            #fetching the result (should only be one)
+            results = cursor.fetchone()
+            
+            #****TOP SONGS*****
+            #getting the artists for the top artists in a good format
+            for artist in results['top_songs_artist'].split("**")[1:]:
+                artistArray.append(artist.split("&&"))
+            
+            #setting all variables accordingly for topsongs
+            cover_image  =results['top_songs_image'].split("**")[1:]
+            name = results['top_songs_name'].split("**")[1:]
+            artists = artistArray
+            song_link = results["top_songs_link"].split("**")[1:]
+            
+            #adding all top songs to an array with dictionary
+            for i in range(len(song_link)):
+                topSongsInfo.append(
+                    {
+                        "cover_image": cover_image[i],
+                        "name": name[i],
+                        "artists": artists[i],
+                        "song_link": song_link[i]
+                    }
+                )
+            artistArray = []
+            #****TOP ARTISTS*****
+            #getting top genres for each artist
+            for genre in results['top_artists_genres'].split("**")[1:]:
+                genresArray.append(genre.split("&&"))
+            
+            #setting all variables accordinglu
+            cover_image = results['top_artists_image'].split("**")[1:]
+            name = results['top_artists_name'].split("**")[1:]
+            artist_link = results['top_artists_link'].split("**")[1:]
+            for i in range(len(song_link)):
+                topArtistsInfo.append(
+                    {
+                        "images": cover_image[i],
+                        "name": name[i],
+                        "genres": genresArray[i],
+                        "artists_link": artist_link[i]
+                    }
+                )
+                for genre in genresArray[i]:
+                    allGenres.append(genre)
+                    
+            #***RECENT SONGS****
+            cover_image = results['recent_songs_images'].split("**")[1:]
+            name = results['recent_songs_name'].split("**")[1:]
+            song_link = results['recent_songs_link'].split("**")[1:]
+            
+            for artists in results['recent_songs_artists'].split("**")[1:]:
+                artistArray.append(artists.split("&&"))
+            for i in range(len(song_link)):
+                recentSongsInfo.append(
+                    {
+                        "cover_images": song_link[i],
+                        "song_name": name[i],
+                        "artists": artistArray[i],
+                        "song_link": cover_image[i]
+                    }
+                )
+            
+            #***PROFILE INFO***
+            spotifyUserName = results['spotify_name']
+            profilePicture = results['spotify_profile_picture']
+            profileInfo.append({
+                "spotifyUserName": spotifyUserName,
+                "profilePicture": profilePicture
+            })
+            #STATS INFO 
+            #add each part to an array
+            spotifyStats.append(results['spotify_valence'])
+            spotifyStats.append(results['spotify_energy'])
+            spotifyStats.append(results['spotify_danceability'])
+            spotifyStats.append(results['spotify_popularity'])
+            
+            playlist_name = results['playlist_name'].split("**")[1:]
+            playlist_id = results['playlist_id'].split("**")[1:]
+            playlist_cover = results['playlist_cover'].split("**")[1:]
+            
+            for i in range(len(playlist_name)):
+                playlistInfo.append(
+                    {
+                        "id": playlist_id[i],
+                        "playlist_name": playlist_name[i],
+                        "cover_image": playlist_cover[i]
+                    }
+                )
+
+            
+    allInfo["top-songs"] = topSongsInfo
+    allInfo["top-artists"] = topArtistsInfo
+    allInfo["top-genres"] = allGenres
+    allInfo["top-artists"] = topArtistsInfo
+    allInfo['recent-songs'] = recentSongsInfo
+    allInfo['profile']  = profileInfo
+    allInfo['stats'] = spotifyStats
+    allInfo["playlist"] = playlistInfo
+    return allInfo
+    return make_response(jsonify({'error': 'temp message'}), 401)
+
 
 
   
